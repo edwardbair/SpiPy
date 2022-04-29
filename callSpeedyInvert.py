@@ -75,11 +75,11 @@ for i in range(0,len(R)):
     plt.figure(i)
     plt.plot(wl[idx],R[i][idx],'k-', label='R')
     plt.plot(wl[idx],res[1][idx],'r-', label=
-             'python model:\n(RMSE=%0.2f,%0.2f)\nfsca=%0.2f\nfshade=%0.2f\nrg=%d ug\ndust=%d ppm' 
+             'python model:\n(RMSE=%0.2f,%0.2f)\nfsca=%0.2f\nfshade=%0.2f\ndust=%d ppm\nrg=%d ug' 
              %(res[2].fun,res[3].fun,res[0].x[0],res[0].x[1],res[0].x[2],res[0].x[3]))
     plt.plot(wl[idx],mrefl[i][idx],'g-', label=
-             'matlab model:\n(RMSE=%0.2f,%0.2f*):\nfsca=%0.2f\nfshade=%0.2f\nrg=%d ug\ndust=%d ppm' 
-             %(mrmse[i][0],mrmse[i][1],msol[i][0],msol[i][1],msol[i][2],msol[i][3]))
+             'matlab model:\n(RMSE=%0.2f,%0.2f*):\nfsca=%0.2f\nfshade=%0.2f\ndust=%d ppm\nrg=%d ug' 
+             %(mrmse[i][0],mrmse[i][1],msol[i][0],msol[i][1],msol[i][3],msol[i][2]))
     plt.legend(loc="upper right")
     plt.title('pixel %d' %i)
     

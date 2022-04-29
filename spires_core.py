@@ -34,19 +34,19 @@ def speedyinvert(F,R,R0,solarZ,shade):
     #jacobian
     jxa=None
     #tolerance
-    tl=1e-15
+    tl=1e-9
     #solver method
     mth='SLSQP'
     #mth specific options
-    op={'disp': True, 'iprint': 100, 'ftol': 1e-15, 'maxiter': 1000,
+    op={'disp': True, 'iprint': 100, 'ftol': 1e-9, 'maxiter': 1000,
         'finite_diff_rel_step': None}
     #bounds: fsca, fshade, dust, grain size
     bnds=np.array([[0,1],[0,1],[0,1000],[30,1200]])
 
     #initial guesses for fsca,fshade,dust, & grain size
     #scaled 0-1, although that doesn't seem to impact results
-    #x0=[0.5,0.05,250,10] #scale to 0-1
-    x0=np.array([0.5,0.05,0.01,0.188])
+    x0=[0.5,0.05,10,250] #scale to 0-1
+    #x0=np.array([0.5,0.05,0.01,0.188])
     
     #model reflectance preallocation
     modelRefl=np.zeros(len(R))
@@ -58,12 +58,19 @@ def speedyinvert(F,R,R0,solarZ,shade):
             #x - parameters: fsca, fshade, dust, grain size, array of len 4
             #modelRefl - modelRefl to be filled out, array of len 7
         #prevent out of bounds guesses
-        x[x>1]=1
-        x[x<0]=0
-        #re-scale from 0-1 to original values
         for i in range(0,len(x)):
-            rng=bnds[i][1]-bnds[i][0]  
-            x[i]=x[i]*rng+bnds[i][0]
+            if x[i]<bnds[i][0]:
+                x[i]=bnds[i][0]
+            if x[i]>bnds[i][1]:
+                x[i]=bnds[i][1]
+        
+        
+        #x[x>1]=1
+        #x[x<0]=0
+        #re-scale from 0-1 to original values
+        # for i in range(0,len(x)):
+        #     rng=bnds[i][1]-bnds[i][0]  
+        #     x[i]=x[i]*rng+bnds[i][0]
             
         #fill in modelRefl for each band for snow properties
         # ie if pixel were pure snow (no fshade, no fother)
@@ -84,7 +91,7 @@ def speedyinvert(F,R,R0,solarZ,shade):
     #so bounds have to be set as inequality constraints
     cons = []
     for factor in range(len(bnds)):
-        lower, upper = [0,1]
+        lower, upper = bnds[factor]
         l = {'type': 'ineq',
              'fun': lambda x, lb=lower, i=factor: x[i] - lb}
         u = {'type': 'ineq',
@@ -130,5 +137,5 @@ def speedyinvert(F,R,R0,solarZ,shade):
     else:
         res=res1
         modelRefl=modelRefl1
-        
+    
     return res,modelRefl,res1,res2

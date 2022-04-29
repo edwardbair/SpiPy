@@ -8,7 +8,6 @@ Created on Wed Apr 20 15:59:38 2022
 
 import numpy as np
 import numpy.linalg as la
-
 from scipy.optimize import minimize#,basinhopping
 
 def speedyinvert(F,R,R0,solarZ,shade):    
@@ -55,9 +54,14 @@ def speedyinvert(F,R,R0,solarZ,shade):
              'fun': lambda x, ub=upper, i=factor: ub - x[i]}
         cons.append(l)
         cons.append(u)
-
+    
+    #  (x[0]+x[1])-1 <= 0 <-> x[0]+x[1] <= 1
+    cons.append(
+        {"type": "ineq", "fun": lambda x: (x[0]+x[1])-1}
+        );
+    
     res1 = minimize(SnowDiff,x0,args=modelRefl,method=mth,
-                    constraints=cons,options=op,tol=tl, jac=jxa)
+                      constraints=cons,options=op,tol=tl, jac=jxa)
     # minimizer_kwargs = dict(args=modelRefl, method=mth, 
     #                         options=op, constraints=cons)
     # res1 = basinhopping(SnowDiff, x0, minimizer_kwargs=minimizer_kwargs,
@@ -78,7 +82,6 @@ def speedyinvert(F,R,R0,solarZ,shade):
     modelRefl2=modelRefl
     #if fsca is with 2 pct, use fsca & fshade only (equality) solution
     if (abs(res1.x[0]-res2.x[0]) < 0.02):
-
         res=res2
         modelRefl=modelRefl2
     else:

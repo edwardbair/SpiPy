@@ -3,21 +3,27 @@
 """
 Created on Wed Apr 20 15:59:38 2022
 @author: nbair
+
+I think the issue is that Pyomo cannot replicate the objective function since
+it uses a regular interpolated grid
+https://groups.google.com/g/pyomo-forum/c/4n8rnycjpTU
+
 """
 
 import numpy as np
 import numpy.linalg as la
-import pyomo.environ as pyomo
+from pyomo.environ import *
+from pyomo.opt import SolverFactory
 
 
 def speedyinvert_p(F,R,R0,solarZ,shade):    
         
-    model = pyomo.ConcreteModel()
+    model = ConcreteModel()
     
-    model.x1=pyomo.Var(initialize=0.5, bounds=(0,1))
-    model.x2=pyomo.Var(initialize=0.05, bounds=(0,1))
-    model.x3=pyomo.Var(initialize=250, bounds=(30,1200))
-    model.x4=pyomo.Var(initialize=10, bounds=(0,1000))
+    model.x1=Var(initialize=0.5, bounds=(0,1), domain=NonNegativeReals)
+    model.x2=Var(initialize=0.05, bounds=(0,1), domain=NonNegativeReals)
+    model.x3=Var(initialize=250, bounds=(30,1200), domain=NonNegativeReals)
+    model.x4=Var(initialize=10, bounds=(0,1000), domain=NonNegativeReals)
     model.modelRefl=np.zeros(len(R))
     
     def SnowDiff(model):
@@ -31,11 +37,11 @@ def speedyinvert_p(F,R,R0,solarZ,shade):
         diffR=la.norm(R-model.modelRefl)
         return diffR
     
-    model.obj = pyomo.Objective(rule=SnowDiff,sense=pyomo.minimize)
-    model.c1 = pyomo.Constraint( expr = (model.x1 + model.x2 <= 1))
-    model.c2 = pyomo.Constraint( expr = (model.x3 >= 0))
-    model.c3 = pyomo.Constraint( expr = (model.x4 >= 0))
-    opt = pyomo.SolverFactory('ipopt')
+    model.obj = Objective(rule = SnowDiff,sense=minimize)
+    model.c1 = Constraint( expr = (model.x1 + model.x2 <= 1))
+    model.c2 = Constraint( expr = (model.x3 >= 0))
+    model.c3 = Constraint( expr = (model.x4 >= 0))
+    opt = SolverFactory('glpk')
     sr1=opt.solve(model, tee=True)
     
     modelRefl1=model.modelRefl

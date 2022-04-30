@@ -10,7 +10,7 @@ Created on Wed Apr 20 15:59:38 2022
 #aren't stuck in a local minimum, which doesn't seem to help
 import numpy as np
 import numpy.linalg as la
-from scipy.optimize import minimize#,basinhopping
+from scipy.optimize import minimize #,brute,basinhopping
 
 def speedyinvert(F,R,R0,solarZ,shade):    
     #invert snow spectra
@@ -32,16 +32,19 @@ def speedyinvert(F,R,R0,solarZ,shade):
     #params for optimization, have tweaked these alot
     #sz=0.3 # basin hopper param
     #jacobian
-    jxa=None
+    #jxa='None'
     #tolerance
-    tl=1e-9
+    tl=1e-12
+    ftl=tl
     #solver method
     mth='SLSQP'
     #mth specific options
-    op={'disp': True, 'iprint': 100, 'ftol': 1e-9, 'maxiter': 1000,
+    op={'disp': True, 'iprint': 100, 'maxiter': 1000, 'ftol': ftl,
         'finite_diff_rel_step': None}
     #bounds: fsca, fshade, dust, grain size
     bnds=np.array([[0,1],[0,1],[0,1000],[30,1200]])
+    #normalized bnds
+    #bndsn=((0,1),(0,1),(0,1),(0,1))
 
     #initial guesses for fsca,fshade,dust, & grain size
     #scaled 0-1, although that doesn't seem to impact results
@@ -50,23 +53,25 @@ def speedyinvert(F,R,R0,solarZ,shade):
     
     #model reflectance preallocation
     modelRefl=np.zeros(len(R))
-
+    mode=[]
+    
     #objective function
-    def SnowDiff(x,modelRefl):
+    def SnowDiff(x):
+        nonlocal modelRefl,mode
         #calc the Euclidean norm of modeled and measured reflectance
         #input:
             #x - parameters: fsca, fshade, dust, grain size, array of len 4
             #modelRefl - modelRefl to be filled out, array of len 7
         #prevent out of bounds guesses
-        for i in range(0,len(x)):
-            if x[i]<bnds[i][0]:
-                x[i]=bnds[i][0]
-            if x[i]>bnds[i][1]:
-                x[i]=bnds[i][1]
+        # for i in range(0,len(x)):
+        #     if x[i]<bnds[i][0]:
+        #         x[i]=bnds[i][0]
+        #     if x[i]>bnds[i][1]:
+        #         x[i]=bnds[i][1]
         
-        
-        #x[x>1]=1
-        #x[x<0]=0
+        # modelRefl=np.asarray(modelRefl)
+        # x[x>1]=1
+        # x[x<0]=0
         #re-scale from 0-1 to original values
         # for i in range(0,len(x)):
         #     rng=bnds[i][1]-bnds[i][0]  
@@ -75,12 +80,20 @@ def speedyinvert(F,R,R0,solarZ,shade):
         #fill in modelRefl for each band for snow properties
         # ie if pixel were pure snow (no fshade, no fother)
         #x[2] and x[3] are dust and grain size
-        for i in range(0,len(R)):
-            pts=np.array([i+1,solarZ,x[2],x[3]])
-            modelRefl[i]= F(pts)
-        #now adjust model reflectance for a mixed pixel, with x[0] and x[1]
-        #as fsca,fshade, and 1-x[0]-x[1] as fother
-        modelRefl=x[0]*modelRefl+x[1]*shade+(1-(x[0]-x[1]))*R0
+        if mode==4:
+            for i in range(0,len(R)):
+                pts=np.array([i+1,solarZ,x[2],x[3]])
+                modelRefl[i]=F(pts)
+            #now adjust model reflectance for a mixed pixel, with x[0] and x[1]
+            #as fsca,fshade, and 1-x[0]-x[1] as fother
+            modelRefl=x[0]*modelRefl+x[1]*shade+(1-(x[0]-x[1]))*R0
+        if mode==3:
+            for i in range(0,len(R)):
+                pts=np.array([i+1,solarZ,x[1],x[2]])
+                modelRefl[i]=F(pts)
+            modelRefl[i]=F(pts)
+            modelRefl=x[0]*modelRefl+(1-x[0])*shade
+          
         #Euclidean norm of measured - modeled reflectance
         diffR=la.norm(R-modelRefl)
         return diffR
@@ -90,40 +103,48 @@ def speedyinvert(F,R,R0,solarZ,shade):
     #COBLYA only supports inequality constraints and not bounds
     #so bounds have to be set as inequality constraints
     cons = []
-    for factor in range(len(bnds)):
-        lower, upper = bnds[factor]
-        l = {'type': 'ineq',
-             'fun': lambda x, lb=lower, i=factor: x[i] - lb}
-        u = {'type': 'ineq',
-             'fun': lambda x, ub=upper, i=factor: ub - x[i]}
-        cons.append(l)
-        cons.append(u)
+    # for factor in range(len(bnds)):
+    #     lower, upper = bnds[factor]
+    #     l = {'type': 'ineq',
+    #          'fun': lambda x, lb=lower, i=factor: x[i] - lb}
+    #     u = {'type': 'ineq',
+    #          'fun': lambda x, ub=upper, i=factor: ub - x[i]}
+    #     cons.append(l)
+    #     cons.append(u)
     
-    #  (x[0]+x[1])-1 <= 0 <-> x[0]+x[1] <= 1
+    #  1-(x[0]+x[1]) >= 0 <-> 1 >= x[0]+x[1]
     #  mixed pixel contraint: fsca+fshade+fother = 1
     cons.append(
         {"type": "ineq", "fun": lambda x: (x[0]+x[1])-1}
-        );
-    
+        )
     #run minimization
-    res1 = minimize(SnowDiff,x0,args=modelRefl,method=mth,
-                      constraints=cons,options=op,tol=tl, jac=jxa)
+    mode=4
+    res1 = minimize(SnowDiff,x0,constraints=cons,
+                    method=mth,options=op,tol=tl, bounds=bnds)
+    # rranges=(slice(0,1,0.01),slice(0,1,0.01),slice(0,1,0.01),slice(0,1,0.01))
+    # resBrute = brute(SnowDiff, rranges, full_output=True, disp=True, finish=None)
+    
     # minimizer_kwargs = dict(args=modelRefl, method=mth, 
     #                         options=op, constraints=cons)
     # res1 = basinhopping(SnowDiff, x0, minimizer_kwargs=minimizer_kwargs,
     #                     stepsize=sz)
     
     #store modeled refl
+   
     modelRefl1=modelRefl
     #run again w/ only snow and shade endmembers
     #by adding new constraint
     #1-(x[0]+x[1]) <= 0 <-> 1 <= x[0]+x[1] 
     #ie.1 <= fsca + fshade <= 1
-    cons.append(
-        {"type": "ineq", "fun": lambda x: 1-(x[0]+x[1])}
-        )
-    res2 = minimize(SnowDiff,x0,args=modelRefl,method=mth,
-                      constraints=cons,options=op,tol=tl, jac=jxa)
+    # cons.append(
+    #     {"type": "ineq", "fun": lambda x: 1-(x[0]+x[1])}
+    #     )
+    mode=3
+    x0=[0.5,10,250]
+    bnds=np.array([[0,1],[0,1000],[30,1200]])
+    res2 = minimize(SnowDiff,x0,method=mth,options=op,tol=tl, bounds=bnds)
+    #insert a zero in for consistency for x[2] (fother)
+    res2.x=np.insert(res2.x,1,1-res2.x[0])
     
     # res2 = basinhopping(SnowDiff, x0, minimizer_kwargs=minimizer_kwargs,
     #                     stepsize=sz)

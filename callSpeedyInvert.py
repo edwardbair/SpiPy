@@ -73,7 +73,9 @@ for i in range(0,len(R)):
     
     #plot results
     plt.figure(i)
+    #R
     plt.plot(wl[idx],R[i][idx],'k-', label='R')
+    #python solution
     plt.plot(wl[idx],res[1][idx],'r-', label=
              'python model:\n(RMSE=%0.2f,%0.2f)\nfsca=%0.2f\nfshade=%0.2f\ndust=%d ppm\nrg=%d ug' 
              %(res[2].fun,res[3].fun,res[0].x[0],res[0].x[1],res[0].x[2],res[0].x[3]))

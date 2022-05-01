@@ -1,55 +1,40 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Wed Apr 20 15:59:38 2022
 
-@author: nbair
 """
 
-#note that basin hopping is commented out. That's a package to ensure results
-#aren't stuck in a local minimum, which doesn't seem to help
 import numpy as np
 import numpy.linalg as la
-from scipy.optimize import minimize #,brute,basinhopping
+from scipy.optimize import minimize 
 
 def speedyinvert(F,R,R0,solarZ,shade):    
-    #invert snow spectra
-    #inputs: 
-        #F - RT/Mie LUT, gridded interpolant LUT w/ F(band # (1-7), 
-        #solar zenith angle (0-90 deg), dust (0-1000 ppm),
-        #grain radius (30-1200 um)
-        # R - target spectra, array of len 7
-        # R0 - background spectra, array of len 7
-        # solarZ - solar zenith angle, deg, scalar
-        # shade - ideal shade endmember, scalar
-    #output:
-        #res -  results from chosen solution, dict
-        #modelRefl - reflectance for chosen solution, array of len 7
-        #res1,res2 - mixed pixel (fsca,fshade,fother) vs snow only (fsca,fshade)
-        #solutions. One of those will be the same as res
+    # invert snow spectra
+    # inputs: 
+    #     F - RT/Mie LUT, gridded interpolant LUT w/ F(band # (1-7), 
+    #     solar zenith angle (0-90 deg), dust (0-1000 ppm),
+    #     grain radius (30-1200 um)
+    #     R - target spectra, array of len 7
+    #     R0 - background spectra, array of len 7
+    #     solarZ - solar zenith angle, deg, scalar
+    #     shade - ideal shade endmember, scalar
+    # output:
+    #     res -  results from chosen solution, dict
+    #     modelRefl - reflectance for chosen solution, array of len 7
+    #     res1,res2 - mixed pixel (fsca,fshade,fother) vs snow only (fsca,fshade)
+    #     solutions. One of those will be the same as res
     
-    
-    #params for optimization, have tweaked these alot
-    #sz=0.3 # basin hopper param
-    #jacobian
-    #jxa='None'
     #tolerance
-    tl=1e-12
-    ftl=tl
+    ftl=1e-9
     #solver method
     mth='SLSQP'
     #mth specific options
-    op={'disp': True, 'iprint': 100, 'maxiter': 1000, 'ftol': ftl,
-        'finite_diff_rel_step': None}
+    op={'disp': True, 'iprint': 100, 'maxiter': 1000, 'ftol': ftl}
     #bounds: fsca, fshade, dust, grain size
     bnds=np.array([[0,1],[0,1],[0,1000],[30,1200]])
-    #normalized bnds
-    #bndsn=((0,1),(0,1),(0,1),(0,1))
 
     #initial guesses for fsca,fshade,dust, & grain size
-    #scaled 0-1, although that doesn't seem to impact results
     x0=[0.5,0.05,10,250] #scale to 0-1
-    #x0=np.array([0.5,0.05,0.01,0.188])
     
     #model reflectance preallocation
     modelRefl=np.zeros(len(R))
@@ -61,27 +46,17 @@ def speedyinvert(F,R,R0,solarZ,shade):
         #calc the Euclidean norm of modeled and measured reflectance
         #input:
             #x - parameters: fsca, fshade, dust, grain size, array of len 4
-            #modelRefl - modelRefl to be filled out, array of len 7
-        #prevent out of bounds guesses
-        # for i in range(0,len(x)):
-        #     if x[i]<bnds[i][0]:
-        #         x[i]=bnds[i][0]
-        #     if x[i]>bnds[i][1]:
-        #         x[i]=bnds[i][1]
-        
-        # modelRefl=np.asarray(modelRefl)
-        # x[x>1]=1
-        # x[x<0]=0
-        #re-scale from 0-1 to original values
-        # for i in range(0,len(x)):
-        #     rng=bnds[i][1]-bnds[i][0]  
-        #     x[i]=x[i]*rng+bnds[i][0]
-            
+            #nonlocal vars from parent function
+            #modelRefl - modelRefl to be filled out, array of len 7        
+            #mode -  4 or 3 int
+            #4 variable solution (1-fsca,2-fshade,fother(1-fsca-fshade),3-grain size,4-dust)
+            #mode - 3 variable solution (1-fsca,fshade (1-fsca),2-grain size,3-dust)
         #fill in modelRefl for each band for snow properties
         # ie if pixel were pure snow (no fshade, no fother)
-        #x[2] and x[3] are dust and grain size
+       
         if mode==4:
             for i in range(0,len(R)):
+                #x[2] and x[3] are dust and grain size
                 pts=np.array([i+1,solarZ,x[2],x[3]])
                 modelRefl[i]=F(pts)
             #now adjust model reflectance for a mixed pixel, with x[0] and x[1]
@@ -89,6 +64,7 @@ def speedyinvert(F,R,R0,solarZ,shade):
             modelRefl=x[0]*modelRefl+x[1]*shade+(1-(x[0]-x[1]))*R0
         if mode==3:
             for i in range(0,len(R)):
+                #x[1] and x[2] are dust and grain size
                 pts=np.array([i+1,solarZ,x[1],x[2]])
                 modelRefl[i]=F(pts)
             modelRefl[i]=F(pts)
@@ -99,64 +75,36 @@ def speedyinvert(F,R,R0,solarZ,shade):
         return diffR
             
     #construct the bounds in the form of constraints
-    #inequality: constraint is =>0 vs. equality: constraint = 0
-    #COBLYA only supports inequality constraints and not bounds
-    #so bounds have to be set as inequality constraints
+    #inequality: constraint is => 0 
     cons = []
-    # for factor in range(len(bnds)):
-    #     lower, upper = bnds[factor]
-    #     l = {'type': 'ineq',
-    #          'fun': lambda x, lb=lower, i=factor: x[i] - lb}
-    #     u = {'type': 'ineq',
-    #          'fun': lambda x, ub=upper, i=factor: ub - x[i]}
-    #     cons.append(l)
-    #     cons.append(u)
-    
     #  1-(x[0]+x[1]) >= 0 <-> 1 >= x[0]+x[1]
-    #  mixed pixel contraint: fsca+fshade+fother = 1
+    #  mixed pixel contraint: 1 >= fsca+fshade <-> 1 = fsca+fshade+(1-fsca)
     cons.append(
-        {"type": "ineq", "fun": lambda x: (x[0]+x[1])-1}
+        {"type": "ineq", "fun": lambda x: 1-x[0]+x[1]}
         )
-    #run minimization
+    #run minimization w/ 4 variables to solve
     mode=4
     res1 = minimize(SnowDiff,x0,constraints=cons,
-                    method=mth,options=op,tol=tl, bounds=bnds)
-    # rranges=(slice(0,1,0.01),slice(0,1,0.01),slice(0,1,0.01),slice(0,1,0.01))
-    # resBrute = brute(SnowDiff, rranges, full_output=True, disp=True, finish=None)
-    
-    # minimizer_kwargs = dict(args=modelRefl, method=mth, 
-    #                         options=op, constraints=cons)
-    # res1 = basinhopping(SnowDiff, x0, minimizer_kwargs=minimizer_kwargs,
-    #                     stepsize=sz)
-    
+                    method=mth,options=op, bounds=bnds)
     #store modeled refl
-   
     modelRefl1=modelRefl
-    #run again w/ only snow and shade endmembers
-    #by adding new constraint
-    #1-(x[0]+x[1]) <= 0 <-> 1 <= x[0]+x[1] 
-    #ie.1 <= fsca + fshade <= 1
-    # cons.append(
-    #     {"type": "ineq", "fun": lambda x: 1-(x[0]+x[1])}
-    #     )
+    #run minimization w/ 3 variables to solve, no constraint needed
     mode=3
     x0=[0.5,10,250]
     bnds=np.array([[0,1],[0,1000],[30,1200]])
-    res2 = minimize(SnowDiff,x0,method=mth,options=op,tol=tl, bounds=bnds)
+    res2 = minimize(SnowDiff,x0,method=mth,options=op, bounds=bnds)
     #insert a zero in for consistency for x[2] (fother)
     res2.x=np.insert(res2.x,1,1-res2.x[0])
-    
-    # res2 = basinhopping(SnowDiff, x0, minimizer_kwargs=minimizer_kwargs,
-    #                     stepsize=sz)
     modelRefl2=modelRefl
-    #if fsca is within 2 pct, use fsca & fshade only solution
-    #error will be higher b/c of 3 params instead of 4. Idea is that
-    # 4 parameter solution would overfit in this case
+    #if fsca is within 2 pct, use 3 variable solution
+    #error will be higher, but 4 parameter solution likely overfits
     if (abs(res1.x[0]-res2.x[0]) < 0.02):
+        choice=3
         res=res2
         modelRefl=modelRefl2
     else:
+        choice=4
         res=res1
         modelRefl=modelRefl1
     
-    return res,modelRefl,res1,res2
+    return res,modelRefl,res1,res2,choice

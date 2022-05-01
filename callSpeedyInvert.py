@@ -83,5 +83,7 @@ for i in range(0,len(R)):
              'matlab model:\n(RMSE=%0.2f,%0.2f*):\nfsca=%0.2f\nfshade=%0.2f\ndust=%d ppm\nrg=%d ug' 
              %(mrmse[i][0],mrmse[i][1],msol[i][0],msol[i][1],msol[i][3],msol[i][2]))
     plt.legend(loc="upper right")
-    plt.title('pixel %d' %i)
+    plt.title(
+        'pixel %d, RMSE values for 4 and 3 parameter models listed,\nw/ stats for choice %d param model shown (matlab choice starred)' 
+              %(i,res[4]))
     

@@ -62,8 +62,7 @@ def speedyinvert(F,R,R0,solarZ,shade):
                 modelRefl[i]=F(pts)
             #now adjust model reflectance for a mixed pixel, with x[0] and x[1]
             #as fsca,fshade, and 1-x[0]-x[1] as fother
-            modelRefl=np.multiply(modelRefl,x[0])+\
-                np.multiply(shade,x[1])+np.multiply(R0,(1-x[0]-x[1]))
+            modelRefl=modelRefl*x[0]+shade*x[1]+R0*(1-x[0]-x[1])
         
         if mode==3:
             for i in range(0,len(R)):
@@ -71,8 +70,7 @@ def speedyinvert(F,R,R0,solarZ,shade):
                 pts=np.array([i+1,solarZ,x[2],x[1]])
                 modelRefl[i]=F(pts)
       
-            modelRefl=np.multiply(modelRefl,x[0])+\
-            np.multiply(shade,(1-x[0]))
+            modelRefl=modelRefl*x[0]+shade*(1-x[0])
           
         #Euclidean norm of measured - modeled reflectance
         diffR=la.norm(R-modelRefl)

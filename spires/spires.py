@@ -5,21 +5,42 @@ from scipy.optimize import minimize
 scipy_options = {'disp': False, 'iprint': 100, 'maxiter': 1000, 'ftol': 1e-9}
 
 
-def speedy_invert(F, R, R0, solarZ, shade, mode=3, scipy_options=scipy_options, method='SLSQP'):
-    # invert snow spectra
-    # inputs: 
-    #     F - RT/Mie LUT, gridded interpolant LUT w/ F(band # (1-7),
-    #       solar zenith angle (0-90 deg),
-    #       dust (0-1000 ppm),grain radius (30-1200 um)
-    #     R - target spectra, array of len 7
-    #     R0 - background spectra, array of len 7
-    #     solarZ - solar zenith angle, deg, scalar
-    #     shade - ideal shade endmember, scalar
-    # output:
-    #     res -  results from chosen solution, dict
-    #     model_reflectances - reflectance for chosen solution, array of len 7
-    #     res1, res2 - mixed pixel (fsca,fshade,fother) vs snow only (fsca,fshade) solutions.
-    #     One of those will be the same as res
+def speedy_invert(f, spectrum_target, spectrum_background,
+                  solar_z, shade, mode=3, scipy_options=scipy_options, method='SLSQP'):
+    """
+    invert snow spectra
+
+    Parameters
+    ------------
+
+    f: gridded interpolant (scipy.interpolate.interpolate.RegularGridInterpolator)
+        F - RT/Mie LUT LUT. Dimensions:
+        - band# (1-7)
+        - solar zenith angle (0-90 deg)
+        - dust (0-1000 ppm)
+        - grain radius (30-1200 um)
+    spectrum_target: array of len 7
+        target spectra
+    spectrum_background: array of len 7
+        background spectra,
+    solar_z: scalar
+        solar zenith angle, deg
+    shade: scalar
+        ideal shade endmember, scalar
+    mode: int; 3 or 4
+        3 or 4 variable inversion. Default: 3
+    scipy_options: dict
+        the scipy solver options.
+        Default:  scipy_options = {'disp': False, 'iprint': 100, 'maxiter': 1000, 'ftol': 1e-9}
+    method: str
+        solver method. Default: 'SLSQP'
+
+    Returns:
+    --------_
+    res -  results from chosen solution, dict
+    model_reflectances - reflectance for chosen solution, array of len 7
+    #     res1, res2 - mixed pixel (fsca, fshade, fother) vs snow only (fsca,fshade) solutions.
+    """
 
     # bounds: fsca, fshade, grain size, dust (note: order for grain radius and dust is switched from F)
     bounds = np.array([[0, 1], [0, 1], [30, 1200], [0, 1000]])
@@ -27,8 +48,8 @@ def speedy_invert(F, R, R0, solarZ, shade, mode=3, scipy_options=scipy_options, 
     # initial guesses for fsca, fshade,dust, & grain size
     x0 = [0.5, 0.05, 10, 250]
 
-    # model reflectance preallocation
-    model_reflectances = np.zeros(len(R))
+    # model reflectance pre-allocation
+    model_reflectances = np.zeros(len(spectrum_target))
 
     # objective function
     def snow_diff(x):
@@ -44,30 +65,29 @@ def speedy_invert(F, R, R0, solarZ, shade, mode=3, scipy_options=scipy_options, 
         # fill in model_reflectances for each band for snow properties ie if pixel were pure snow (no fshade, no fother)
 
         if mode == 4:
-            for i in range(0, len(R)):
+            for i in range(0, len(spectrum_target)):
                 # x[2] and x[3] are grain radius and dust
-                pts = np.array([i + 1, solarZ, x[3], x[2]])
-                model_reflectances[i] = F(pts)
+                pts = np.array([i + 1, solar_z, x[3], x[2]])
+                model_reflectances[i] = f(pts)
             # now adjust model reflectance for a mixed pixel, with x[0] and x[1]
             # as fsca, fshade, and 1-x[0]-x[1] as fother
-            model_reflectances = model_reflectances * x[0] + shade * x[1] + R0 * (1 - x[0] - x[1])
+            model_reflectances = model_reflectances * x[0] + shade * x[1] + spectrum_background * (1 - x[0] - x[1])
 
         if mode == 3:
-            for i in range(0, len(R)):
+            for i in range(0, len(spectrum_target)):
                 # x[1] and x[2] are grain radius and dust
-                pts = np.array([i + 1, solarZ, x[2], x[1]])
-                model_reflectances[i] = F(pts)
+                pts = np.array([i + 1, solar_z, x[2], x[1]])
+                model_reflectances[i] = f(pts)
 
             model_reflectances = model_reflectances * x[0] + shade * (1 - x[0])
 
         # Euclidean norm of measured - modeled reflectance
-        diffR = np.linalg.norm(R - model_reflectances)
-        return diffR
+        diff_r = np.linalg.norm(spectrum_target - model_reflectances)
+        return diff_r
 
     # construct the bounds in the form of constraints
     # inequality: constraint is => 0
-    constraints = [{"type": "ineq",
-                    "fun": lambda x: 1 - x[0] + x[1]}]
+    constraints = [{"type": "ineq", "fun": lambda x: 1 - x[0] + x[1]}]
     #  1-(x[0]+x[1]) >= 0 <-> 1 >= x[0]+x[1]
     #  mixed pixel contraint: 1 >= fsca+fshade <-> 1 = fsca+fshade+(1-fsca)
 

@@ -16,5 +16,9 @@ pip3 install .
 # Usage
 
 
+```python
+import spires
+
+```
 
 NB 5/2/22

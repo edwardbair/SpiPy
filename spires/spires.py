@@ -1,8 +1,19 @@
 import numpy as np
 from scipy.optimize import minimize
+import h5py
+import scipy
 
 # method specific options
 scipy_options = {'disp': False, 'iprint': 100, 'maxiter': 1000, 'ftol': 1e-9}
+
+
+def load_lut(lut_file='LUT_MODIS.mat'):
+    with h5py.File(lut_file, 'r') as lut:
+        d = {}
+        for k in lut.keys():
+            d[k] = np.squeeze(np.array(lut.get(k)))
+    f = scipy.interpolate.RegularGridInterpolator(points=[d['X4'], d['X3'], d['X2'], d['X1']], values=d['X'])
+    return f
 
 
 def speedy_invert(f, spectrum_target, spectrum_background,

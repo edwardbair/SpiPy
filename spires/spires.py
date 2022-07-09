@@ -1,7 +1,7 @@
 import numpy as np
 from scipy.optimize import minimize
 import h5py
-import scipy
+import scipy.interpolate
 
 # method specific options
 scipy_options = {'disp': False, 'iprint': 100, 'maxiter': 1000, 'ftol': 1e-9}

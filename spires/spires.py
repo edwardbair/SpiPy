@@ -51,6 +51,13 @@ def speedy_invert(f, spectrum_target, spectrum_background,
     res -  results from chosen solution, dict
     model_reflectances - reflectance for chosen solution, array of len 7
     #     res1, res2 - mixed pixel (fsca, fshade, fother) vs snow only (fsca,fshade) solutions.
+
+    Examples:
+    -----------
+    >>> import spires
+    >>> 
+    >>> 1+1
+    2
     """
 
     # bounds: fsca, fshade, grain size, dust (note: order for grain radius and dust is switched from F)

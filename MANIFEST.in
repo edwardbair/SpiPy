@@ -1,0 +1,2 @@
+include versioneer.py
+include spires/_version.py

@@ -1,3 +1,6 @@
 __pycache__/
 *.mat
 *.hdf
+*.ipynb_checkpoints*
+*.egg-info*
+/build

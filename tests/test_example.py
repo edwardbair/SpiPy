@@ -1,7 +1,5 @@
 import numpy
 import numpy as np
-import h5py
-import scipy.interpolate
 import spires
 
 # R is 7 band spectra for the 2 pixels
@@ -29,7 +27,7 @@ def F(pts):
     # Mockup lookup table
     band = int(pts[0])
     l = [0.94016741, 0.919606, 0.92147043, 0.93222527, 0.63493878, 0.18821908, 0.11910248]
-    val = numpy.array([l[band-1]])
+    val = l[band-1]
     return val
 
 
@@ -43,7 +41,7 @@ def test_lookup():
     rg = res.x[2]
     dust = res.x[3]
 
-    expected = numpy.array([  0.94842048,   0.70156266,  30.        , 250.        ])
+    expected = numpy.array([0.94842048,   0.70156266,  30.        , 250.        ])
     numpy.testing.assert_array_almost_equal(res.x, expected)
 
 

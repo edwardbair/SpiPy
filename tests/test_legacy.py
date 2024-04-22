@@ -23,26 +23,26 @@ solarZ = np.array([24.0, 24.71])
 shade = np.zeros(len(R[0]))
 
 
-def F(pts):
-    # Mockup lookup table
-    band = int(pts[0])
-    l = [0.94016741, 0.919606, 0.92147043, 0.93222527, 0.63493878, 0.18821908, 0.11910248]
-    val = l[band-1]
-    return val
+F = spires.legacy.load_lut('tests/data/LUT_MODIS.mat')
 
 
 def test_lookup():
     i_pixel = 0
     mode = 4
-    res, model_refl = spires.speedy_invert(F, R[i_pixel], R0[i_pixel], solarZ[i_pixel], shade, mode)
+    res, model_refl = spires.legacy.speedy_invert(f=F,
+                                                  spectrum_target=R[i_pixel],
+                                                  spectrum_background=R0[i_pixel],
+                                                  solar_angle=solarZ[i_pixel],
+                                                  shade=shade,
+                                                  mode=mode)
     rmse = res.fun
     fsca = res.x[0]
     fshade = res.x[1]
     rg = res.x[2]
     dust = res.x[3]
 
-    expected = numpy.array([0.94842048,   0.70156266,  30.        , 250.        ])
-    numpy.testing.assert_array_almost_equal(res.x, expected)
+    expected = numpy.array([8.847613e-01, 4.868147e-02, 4.299302e+02, 1.819897e+01])
+    numpy.testing.assert_allclose(res.x, expected, rtol=1e-5)
 
 
 

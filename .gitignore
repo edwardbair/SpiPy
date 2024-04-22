@@ -4,3 +4,6 @@ __pycache__/
 *.ipynb_checkpoints*
 *.egg-info*
 /build
+/spires/spires_wrap.cpp
+/spires/_core.cpython-312-darwin.so
+/spires/core.py

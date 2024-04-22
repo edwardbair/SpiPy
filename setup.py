@@ -1,7 +1,34 @@
 #!/usr/bin/env/python
 
+import numpy
 import setuptools
+from setuptools.command.build_py import build_py as _build_py
 import versioneer
+
+
+NLOP_LIB_DIRS = ['/opt/homebrew/Cellar/nlopt/2.7.1/lib']
+NLOP_INCLUDE_DIRS = ['/opt/homebrew/Cellar/nlopt/2.7.1/include']
+
+INCLUDE_DIRS = NLOP_INCLUDE_DIRS + [numpy.get_include()]
+
+spires = setuptools.Extension(name='spires._core',
+                              sources=['spires/spires.i', 'spires/spires.cpp'],
+                              swig_opts=['-c++'],
+                              extra_compile_args=['-std=c++11'],
+                    library_dirs=NLOP_LIB_DIRS,    
+                    include_dirs=INCLUDE_DIRS,     
+                    libraries=['nlopt'],
+                    language='c++')
+
+
+class build_py(_build_py):
+
+    def run(self):
+        """ 
+        We need to overwrite run to make sure extension is built before getting copied
+        """
+        self.run_command("build_ext")
+        return super().run()
 
 
 version = versioneer.get_version()
@@ -10,6 +37,10 @@ cmdclass = versioneer.get_cmdclass()
 
 setuptools.setup(
     version=version,
-    cmdclass=cmdclass
+    cmdclass=cmdclass,
+    ext_modules=[spires],
 )
+
+
+
 

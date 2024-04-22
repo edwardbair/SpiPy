@@ -13,6 +13,15 @@ but for the time being there's just spectra for the SPIRES part, so it doesn't m
 # Online
 Use [Google Colab](https://colab.research.google.com/github/edwardbair/SpiPy/blob/master/examples/callSpeedyInvert.ipynb)
 
+# git-lfs
+We are using git-LFS for the testing data.
+
+On macos:
+```bash
+brew install git-lfs
+git lfs install
+```
+
 # Setup
 
 ```bash

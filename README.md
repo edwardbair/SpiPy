@@ -1,19 +1,20 @@
-# SpiPy
+# SpiPy Readme
+
 SpiPy is the python implementation of [SPIRES](https://ieeexplore.ieee.org/document/9290428), originally implemented in
 Matlab ([SPIRES Github repository](https://github.com/edwardbair/SPIRES))
 
 
-# Inputs: Simulated Mie-Scattering snow reflectance Lookup tables
+## Inputs: Simulated Mie-Scattering snow reflectance Lookup tables
 - MODIS: `LUT_MODIS.mat` and a MODIS hdf file are at: ftp://ftp.snow.ucsb.edu/pub/org/snow/users/nbair/SpiPy
   - wget "ftp://ftp.snow.ucsb.edu/pub/org/snow/users/nbair/SpiPy/LUT_MODIS.mat"
 
 I realize these inputs need to be switched to Landsat, 
 but for the time being there's just spectra for the SPIRES part, so it doesn't matter
 
-# Online
+## Online
 Use [Google Colab](https://colab.research.google.com/github/edwardbair/SpiPy/blob/master/examples/callSpeedyInvert.ipynb)
 
-# git-lfs
+## git-lfs
 We are using git-LFS for the testing data.
 
 On macos:
@@ -22,13 +23,30 @@ brew install git-lfs
 git lfs install
 ```
 
-# Setup
+## Create Documentation
+
+```bash
+pip install Sphinx
+pip install sphinx-automodapi
+pip install sphinx-markdown-tables
+pip install myst-parser
+pip install nbsphinx
+pip install numpydoc
+pip install pydata-sphinx-theme
+```
+
+```bash
+cd doc/
+make html
+```
+
+## Setup
 
 ```bash
 pip3 install .
 ```
 
-# Usage
+## Usage
 the `examples/` folder contains some notebooks with use cases.
 
 A general usecase may look like:
@@ -38,15 +56,15 @@ import spires
 interpolator = spires.LutInterpolator(lut_file='tests/data/lut_sentinel2b_b2to12_3um_dust.mat')
 
 spires.get_fsca()
-
 ```
 
-# Testing
+## Testing
 Do the doctests
 
 ```
 pytest --doctest-modules
 ```
+
 
 
 ## SpiPy Swig extensions
@@ -59,7 +77,7 @@ python3 setup.py build_ext --inplace
 ````
 
 How we would build the shared object by itself:
-```bashs
+```bash
 NUMPY_INCLUDE=/Users/griessban/miniconda3/envs/spipy_swig/lib/python3.12/site-packages/numpy/core/include
 NUMPY_LIB=/Users/griessban/miniconda3/envs/spipy_swig/lib/python3.12/site-packages/numpy/core/lib
 g++ -shared -o your_module.so spires.cpp -I$NUMPY_INCLUDE -L$NUMPY_LIB -lnumpy

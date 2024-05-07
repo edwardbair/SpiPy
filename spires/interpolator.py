@@ -61,13 +61,29 @@ def get_index_linspace(coordinates: np.array, value: float) -> float:
 
 
 def is_linspace(array):
+    """
+    Checks if a numpy array is linearly spaced.
+    Parameters
+    ----------
+    array: numpy.ndarray
+
+    Returns
+    -------
+    is_linspace: bool
+
+    """
     diffs = np.diff(array)
     return np.allclose(diffs, diffs[0])
 
 
 class LutInterpolator:
+    """
+    A LutInterpolator provides a convenient interface to read LUT data from netCDF files and an interface
+    to interpolate ideal snow reflectances.
+    """
 
-    def __init__(self, grid=None, reflectances=None, bands=None, solar_angles=None, dust_concentrations=None, grain_sizes=None, lut_file=None):
+    def __init__(self, grid=None, reflectances=None, bands=None, solar_angles=None, dust_concentrations=None,
+                 grain_sizes=None, lut_file=None):
         """
 
         Parameters
@@ -78,10 +94,10 @@ class LutInterpolator:
                 - coordinates: bands, solar_angles, dust_concentrations, grain_sizes and
         reflectances: numpy.ndarray:
             4D array of reflectances with
-                - dim1: bands
-                - dim2: solar_angles
-                - dim3: dust_concentrations
-                - dim4: grain_sizes
+            - dim1: bands
+            - dim2: solar_angles
+            - dim3: dust_concentrations
+            - dim4: grain_sizes
             If reflectances is specified, bands, solar_angles, dust_concentrations,
             and grain_sizes have to be set as well
         bands: numpy.ndarray:
@@ -93,7 +109,10 @@ class LutInterpolator:
         grain_sizes: numpy.ndarray
             1D array of grain size coordinates
         lut_file: str
-            Specify alternatively to the reflectances file
+            Specify alternatively to the reflectances files
+
+        Examples
+        -----------
 
         """
         if lut_file is not None:
@@ -112,6 +131,14 @@ class LutInterpolator:
         self.verify_linspace()
 
     def verify_linspace(self):
+        """
+        Verifies that all coordinates are linearly spaced.
+
+        Returns
+        -------
+        None
+
+        """
         self.solar_angles_is_linspace = is_linspace(self.solar_angles)
         self.dust_concentrations_is_linspace = is_linspace(self.dust_concentrations)
         self.grain_sizes_is_linspace = is_linspace(self.grain_sizes)
@@ -188,10 +215,7 @@ class LutInterpolator:
 
         Parameters
         ----------
-        band: int
-        solar_angle: double
-        dust_concentration: double
-        grain_size: double
+        pts: array-like
 
         Returns
         -------
@@ -243,10 +267,10 @@ class LutInterpolator:
         Parameters
         ----------
         pts: array_like with
-            - pts[0]: band
-            - pts[1]: solar_angle
-            - pts[2]: dust_concentration
-            - pts[3]: grain_size
+        - pts[0]: band
+        - pts[1]: solar_angle
+        - pts[2]: dust_concentration
+        - pts[3]: grain_size
 
         Returns
         -------

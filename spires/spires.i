@@ -26,7 +26,7 @@ namespace std {
 %apply (double* IN_ARRAY1, int DIM1) { 
     (double* spectrum_background, int len_background),
     (double* spectrum_target, int len_target),
-    (double* x, int len_x),    
+    (double* spectrum_shade, int len_shade),
     (double* grain_sizes, int len_grain_sizes),
     (double* dust_concentrations, int len_dust_concentrations),
     (double* solar_angles, int len_solar_angles),
@@ -34,12 +34,19 @@ namespace std {
     (double* obs_solar_angles, int n_obs_solar_angles)   
 }
 
-%apply (double* IN_ARRAY2, int DIM1, int DIM2) {
-       (double* spectra_backgrounds, int n_obs_backgrounds, int n_bands_backgrounds),
-       (double* spectra_targets, int n_obs_target, int n_bands_target),
-       (double* results, int n_obs, int n_results)
+%apply (double* INPLACE_ARRAY1, int DIM1) {
+    (double* x, int len_x)
+
 }
 
+%apply (double* IN_ARRAY2, int DIM1, int DIM2) {
+       (double* spectra_backgrounds, int n_obs_backgrounds, int n_bands_backgrounds),
+       (double* spectra_targets, int n_obs_target, int n_bands_target)
+}
+
+%apply(double* INPLACE_ARRAY2, int DIM1, int DIM2) {
+    (double* results, int n_obs, int n_results)
+ }
 
 
 

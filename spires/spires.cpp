@@ -276,7 +276,8 @@ public:
 
 double spectrum_difference(const std::vector<double>& x ,
                            double* spectrum_background, int len_background, 
-                           double* spectrum_target, int len_target,                            
+                           double* spectrum_target, int len_target,
+                           double* spectrum_shade, int len_shade,
                            double solar_angle,       
                            double* bands, int len_bands,
                            double* solar_angles, int len_solar_angles,
@@ -297,9 +298,8 @@ double spectrum_difference(const std::vector<double>& x ,
     double grain_size = x[3];
 
     //std::cerr << ' ' << f_sca << ' ' << f_shade  << ' ' << solar_angle << ' ' << dust << ' ' << grain_size << std::endl;
-    
-    std::vector<double> shade_data(n_bands, 0.0);
-    Spectrum shade(shade_data);
+
+    Spectrum shade(spectrum_shade, len_shade);
     Spectrum background(spectrum_background, len_background);
     Spectrum target(spectrum_target, len_target);
 
@@ -338,6 +338,7 @@ double index_to_value(double value, double* coords, int len_coords){
 double spectrum_difference_scaled(const std::vector<double> &x ,
                                   double* spectrum_background, int len_background,
                                   double* spectrum_target, int len_target,
+                                  double* spectrum_shade, int len_shade,
                                   double solar_angle,
                                   double* bands, int len_bands,
                                   double* solar_angles, int len_solar_angles,
@@ -353,6 +354,7 @@ double spectrum_difference_scaled(const std::vector<double> &x ,
     return spectrum_difference(x_scaled,
                                spectrum_background, len_background,
                                spectrum_target, len_target,
+                               spectrum_shade, len_shade,
                                solar_angle,
                                bands, len_bands,
                                solar_angles, len_solar_angles,
@@ -368,15 +370,14 @@ double spectrum_difference_scaled(const std::vector<double> &x ,
 struct ObjectiveData{
     double* lut;
     int n_bands, n_solar_angles, n_dust_concentrations, n_grain_sizes;
-    double* spectrum_background;
-    double* spectrum_target;    
-    int len_background, len_target;
+    double* spectrum_background; int len_background;
+    double* spectrum_target; int len_target;
+    double* spectrum_shade; int len_shade;
     double solar_angle;
-    double* bands;
-    double* solar_angles;
-    double* dust_concentrations;
-    double* grain_sizes;
-    int len_bands, len_solar_angles, len_dust_concentrations, len_grain_sizes;    
+    double* bands; int len_bands;
+    double* solar_angles; int len_solar_angles;
+    double* dust_concentrations; int len_dust_concentrations;
+    double* grain_sizes; int len_grain_sizes;
 };
 
 
@@ -389,9 +390,11 @@ struct ObjectiveData{
     int n_dust_concentrations = obj_data->n_dust_concentrations;
     int n_grain_sizes = obj_data->n_grain_sizes;
     double* spectrum_background = obj_data->spectrum_background;
-    double* spectrum_target = obj_data->spectrum_target;
     int len_background = obj_data->len_background;
+    double* spectrum_target = obj_data->spectrum_target;
     int len_target = obj_data->len_target;
+    double* spectrum_shade = obj_data-> spectrum_shade;
+    int len_shade = obj_data->len_shade;
     double solar_angle = obj_data->solar_angle;
     double* bands = obj_data->bands;
     int len_bands = obj_data->len_bands;
@@ -404,7 +407,8 @@ struct ObjectiveData{
 
     return spectrum_difference(x,
                                spectrum_background, len_background, 
-                               spectrum_target, len_target,                            
+                               spectrum_target, len_target,
+                               spectrum_shade, len_shade,
                                solar_angle,      
                                bands, len_bands,
                                solar_angles, len_solar_angles,
@@ -414,27 +418,42 @@ struct ObjectiveData{
  }
 
 
+#include <iostream>
+#include <unistd.h>
+#include <sys/wait.h>
+#include <signal.h>
+#include <chrono>
+#include <thread>
+
 double constraint(const std::vector<double> &x, std::vector<double> &grad, void *data) {
     // f_sca + f_shade <= 1
     return x[0] + x[1] - 1;
 }
 
-std::vector<double> get_fsca(double* spectrum_background, int len_background, 
-                             double* spectrum_target, int len_target,
-                             double solar_angle,
-                             double* bands, int len_bands,
-                             double* solar_angles, int len_solar_angles,
-                             double* dust_concentrations, int len_dust_concentrations,
-                             double* grain_sizes, int len_grain_sizes,
-                             double* lut, int n_bands, int n_solar_angles, int n_dust_concentrations, int n_grain_sizes,
-                             int max_eval,
-                             std::vector<double> x ) {
+
+
+std::vector<double> invert(double* spectrum_background, int len_background,
+                           double* spectrum_target, int len_target,
+                           double* spectrum_shade, int len_shade,
+                           double solar_angle,
+                           double* bands, int len_bands,
+                           double* solar_angles, int len_solar_angles,
+                           double* dust_concentrations, int len_dust_concentrations,
+                           double* grain_sizes, int len_grain_sizes,
+                           double* lut, int n_bands, int n_solar_angles, int n_dust_concentrations, int n_grain_sizes,
+                           int max_eval,
+                           std::vector<double> x0,
+                           int algorithm) {
+
+    //std::cout << "Starting" << std::endl;                
     
     ObjectiveData obj_data;
     obj_data.spectrum_background = spectrum_background;
     obj_data.len_background = len_background;
     obj_data.spectrum_target = spectrum_target;
     obj_data.len_target = len_target;
+    obj_data.spectrum_shade = spectrum_shade;
+    obj_data.len_shade = len_shade;
     obj_data.solar_angle = solar_angle;
     obj_data.bands = bands;
     obj_data.len_bands = len_bands;
@@ -452,17 +471,76 @@ std::vector<double> get_fsca(double* spectrum_background, int len_background,
 
     // Create an instance of the NLopt optimizer
     //"LD" means local optimization, (derivative/gradient-based) "LN" means local optimization, (no derivatives)
-    nlopt::opt opt(nlopt::LN_COBYLA, 4);
-    //nlopt::opt opt(nlopt::LD_SLSQP, 4); // Use SLSQP algorithm with 4 dimensions
+
+    bool constrained_algorithm;
+    nlopt::opt opt;
+
+
+
+
+    if (algorithm==1) {
+        opt = nlopt::opt(nlopt::LN_COBYLA, 4);
+        constrained_algorithm = true;
+
+        // Set the initial step size (rhobeg) for the COBYLA algorithm
+        std::vector<double> rhobeg = {0.1, 0.1, 100, 100};
+        opt.set_initial_step(rhobeg);
+
+        /*
+        nlopt::LN_COBYLA::XTOL_REL: Sets the relative tolerance on optimization parameters.
+        nlopt::LN_COBYLA::FTOL_REL: Sets the relative tolerance on the function value.
+        nlopt::LN_COBYLA::XTOL_ABS: Sets the absolute tolerance on optimization parameters.
+        nlopt::LN_COBYLA::FTOL_ABS: Sets the absolute tolerance on the function value.
+        nlopt::LN_COBYLA::MAX_EVAL: Sets the maximum number of function evaluations allowed.
+        nlopt::LN_COBYLA::RHOBEGIN: Sets the initial step size.
+        nlopt::LN_COBYLA::RHOEND: Sets the final step size.
+        nlopt::LN_COBYLA::MAX_ITER: Sets the maximum number of iterations allowed.
+        */
+
+
+    } else if (algorithm==2) {
+        opt = nlopt::opt(nlopt::LN_NELDERMEAD, 4);
+        constrained_algorithm = false;
+
+        /*
+        nlopt::LN_NELDERMEAD::STOPVAL: Sets the stop value for the objective function.
+        nlopt::LN_NELDERMEAD::XTOL_REL: Sets the relative tolerance on optimization parameters.
+        nlopt::LN_NELDERMEAD::FTOL_REL: Sets the relative tolerance on the function value.
+        nlopt::LN_NELDERMEAD::XTOL_ABS: Sets the absolute tolerance on optimization parameters.
+        nlopt::LN_NELDERMEAD::FTOL_ABS: Sets the absolute tolerance on the function value.
+        nlopt::LN_NELDERMEAD::MAX_EVAL: Sets the maximum number of function evaluations allowed.
+        nlopt::LN_NELDERMEAD::MAX_ITER: Sets the maximum number of iterations allowed.
+        */
+
+
+    } else if (algorithm==3) {
+        opt = nlopt::opt(nlopt::LD_SLSQP, 4); // Use SLSQP algorithm with 4 dimensions
+        constrained_algorithm = true;
+
+        /*
+        nlopt::LD_SLSQP::STOPVAL: Sets the stop value for the objective function.
+        nlopt::LD_SLSQP::XTOL_REL: Sets the relative tolerance on optimization parameters.
+        nlopt::LD_SLSQP::FTOL_REL: Sets the relative tolerance on the function value.
+        nlopt::LD_SLSQP::XTOL_ABS: Sets the absolute tolerance on optimization parameters.
+        nlopt::LD_SLSQP::FTOL_ABS: Sets the absolute tolerance on the function value.
+        nlopt::LD_SLSQP::MAX_EVAL: Sets the maximum number of function evaluations allowed.
+        nlopt::LD_SLSQP::MAX_ITER: Sets the maximum number of iterations allowed.
+        nlopt::LD_SLSQP::INITIAL_STEP: Sets the initial step size for line search.
+        nlopt::LD_SLSQP::DIFF_STEP: Sets the step size used to compute numerical derivatives.
+        */
+    }
+
+    if (constrained_algorithm ) {
+        // Add the constraint function
+        opt.add_inequality_constraint(constraint, &obj_data);
+        constrained_algorithm = true;
+    }
 
     // Set objective function and gradient function (if available)
     opt.set_min_objective(spectrum_difference_wrapper, &obj_data);
 
     // Set the stopping criteria (e.g., maximum number of iterations)
     opt.set_maxeval(max_eval);
-
-    // Add the constraint function
-    opt.add_inequality_constraint(constraint, &obj_data);
 
     // Set the lower and upper bounds for each dimension of x
     double min_dust_concentration = dust_concentrations[0];
@@ -476,34 +554,31 @@ std::vector<double> get_fsca(double* spectrum_background, int len_background,
     opt.set_lower_bounds(lower_bounds);
     opt.set_upper_bounds(upper_bounds);
 
-    // Set the initial step size (rhobeg) for the COBYLA algorithm
-    std::vector<double> rhobeg = {0.1, 0.1, 100, 100};
-    opt.set_initial_step(rhobeg); //
-
     // Set convergence tolerance
     opt.set_ftol_abs(1e-4);
-    //opt.set_xtol_abs(1e-3);  // Relative parameter tolerance
+    opt.set_xtol_rel(1e-2);  // Relative parameter tolerance
 
     // Optimize
     double minf; // Objective function value at minimum
+    //std::vector<double> x = {0.5, 0.05, 10, 250};
+    std::vector<double> x = x0;
     nlopt::result result = opt.optimize(x, minf);
-
-    //std::cerr << minf << " " << result<< std::endl;
-
 
     return x;
 }
 
-std::vector<double> get_fsca_scaled(double* spectrum_background, int len_background,
-                                    double* spectrum_target, int len_target,
-                                    double solar_angle,
-                                    double* bands, int len_bands,
-                                    double* solar_angles, int len_solar_angles,
-                                    double* dust_concentrations, int len_dust_concentrations,
-                                    double* grain_sizes, int len_grain_sizes,
-                                    double* lut, int n_bands, int n_solar_angles, int n_dust_concentrations, int n_grain_sizes,
-                                    int max_eval,
-                                    std::vector<double> x ) {
+
+std::vector<double> invert_scaled(double* spectrum_background, int len_background,
+                                  double* spectrum_target, int len_target,
+                                  double solar_angle,
+                                  double* bands, int len_bands,
+                                  double* solar_angles, int len_solar_angles,
+                                  double* dust_concentrations, int len_dust_concentrations,
+                                  double* grain_sizes, int len_grain_sizes,
+                                  double* lut, int n_bands, int n_solar_angles, int n_dust_concentrations, int n_grain_sizes,
+                                  int max_eval,
+                                  std::vector<double> x0,
+                                  int algorithm) {
 
     ObjectiveData obj_data;
     obj_data.spectrum_background = spectrum_background;
@@ -561,25 +636,28 @@ std::vector<double> get_fsca_scaled(double* spectrum_background, int len_backgro
 
     // Optimize
     double minf; // Objective function value at minimum
+
+    std::vector<double> x = x0;
     nlopt::result result = opt.optimize(x, minf);
 
-    std::cerr << minf << std::endl;
-    std::cerr << result << std::endl;
 
     return x;
 }
 
-void get_fscas(double* spectra_backgrounds, int n_obs_backgrounds, int n_bands_backgrounds,
-               double* spectra_targets, int n_obs_target, int n_bands_target,
-               double* obs_solar_angles, int n_obs_solar_angles,
-               double* bands, int len_bands,
-               double* solar_angles, int len_solar_angles,
-               double* dust_concentrations, int len_dust_concentrations,
-               double* grain_sizes, int len_grain_sizes,
-               double* lut, int n_bands, int n_solar_angles, int n_dust_concentrations, int n_grain_sizes,
-               double* results, int n_obs, int n_results,
-               int max_eval,
-               std::vector<double> x0) {
+
+void invert_array(double* spectra_backgrounds, int n_obs_backgrounds, int n_bands_backgrounds,
+                  double* spectra_targets, int n_obs_target, int n_bands_target,
+                  double* spectrum_shade, int len_shade,
+                  double* obs_solar_angles, int n_obs_solar_angles,
+                  double* bands, int len_bands,
+                  double* solar_angles, int len_solar_angles,
+                  double* dust_concentrations, int len_dust_concentrations,
+                  double* grain_sizes, int len_grain_sizes,
+                  double* lut, int n_bands, int n_solar_angles, int n_dust_concentrations, int n_grain_sizes,
+                  double* results, int n_obs, int n_results,
+                  int max_eval,
+                  std::vector<double> x0,
+                  int algorithm) {
 
     // n_obs_backgrounds == n_obs_target == n_obs_solar_angles
     // n_bands_backgrounds == n_bands_target == n_obs_solar_angles == len_bands
@@ -592,19 +670,25 @@ void get_fscas(double* spectra_backgrounds, int n_obs_backgrounds, int n_bands_b
 
         //std::cerr << solar_angle << std::endl;
 
-        std::vector<double> x = get_fsca(spectrum_background, len_bands, 
-                                         spectrum_target, len_bands,                            
-                                         solar_angle,       
-                                         bands, len_bands,
-                                         solar_angles,  len_solar_angles,
-                                         dust_concentrations,  len_dust_concentrations,
-                                         grain_sizes,  len_grain_sizes,                     
-                                         lut, n_bands, n_solar_angles, n_dust_concentrations, n_grain_sizes,
-                                         max_eval,
-                                         x0);
+        std::vector<double> x = invert(spectrum_background, len_bands,
+                                       spectrum_target, len_bands,
+                                       spectrum_shade, len_shade,
+                                       solar_angle,
+                                       bands, len_bands,
+                                       solar_angles,  len_solar_angles,
+                                       dust_concentrations,  len_dust_concentrations,
+                                       grain_sizes,  len_grain_sizes,
+                                       lut, n_bands, n_solar_angles, n_dust_concentrations, n_grain_sizes,
+                                       max_eval,
+                                       x0,
+                                       algorithm
+                                       );
 
         for (size_t i = 0; i < x.size(); ++i) {
             results[obs * n_results + i] = x[i];
         }
     }
 }
+
+
+

@@ -4,18 +4,26 @@ import numpy as np
 import scipy.interpolate
 
 
-def speedy_invert(spectrum_target, spectrum_background, solar_angle,
+algorithm_dict = {'COBYLA': 1,
+                  'NELDER_MEAD': 2,
+                  'SLSQP': 3}
+
+
+def speedy_invert(spectrum_target, spectrum_background, solar_angle, spectrum_shade=None,
                   bands=None, solar_angles=None, dust_concentrations=None, grain_sizes=None, reflectances=None,
-                  interpolator=None, lut_dataarray=None):
+                  interpolator=None, lut_dataarray=None, max_eval=100, x0=np.array([0.5, 0.05, 10, 250]), algorithm=2):
     """
     Inverts the snow reflectance spectrum. Optimization is performed using Nlopt's LN_COBYLA algorithm.
 
     Parameters
     ----------
+
     spectrum_background: numpy.ndarray
         the background (R_0) spectrum
     spectrum_target: numpy.ndarray
         the mixed spectrum to invert. Has to be same length as `spectrum_background`
+    spectrum_shade: numpy.ndarray
+        the idea; shaded spectrum. Has to be same length as `spectrum_target`
     solar_angle: float
         the solar angle of the spectrum target
     bands: numpy.ndarray
@@ -32,6 +40,15 @@ def speedy_invert(spectrum_target, spectrum_background, solar_angle,
         specify the interpolator instead of bands, solar_angles, dust_concentrations and grain_sizes.
     lut_dataarray: xarray.DataArray
         specify the lut_dataarray instead of bands, solar_angles, dust_concentrations and grain_sizes.
+    algorithm: int
+        Algorithm to use for inverting the snow reflectance spectrum.
+        1: LN_COBYLA
+        2: LN_NELDERMEAD
+        3: LD_SLSQP
+    x0: array-like
+        Initial guess. x0[0]: fsca, x0[1]: fshade, x[2]: dust_conc, x[3]: grain_size
+    max_eval: int
+        maximum number of iterations
 
     Returns
     --------
@@ -49,9 +66,12 @@ def speedy_invert(spectrum_target, spectrum_background, solar_angle,
     >>> solar_angle = 55.73733298
     >>> interpolator = spires.interpolator.LutInterpolator(lut_file='tests/data/lut_sentinel2b_b2to12_3um_dust.mat')
     >>> spires.speedy_invert(spectrum_target=spectrum_target, spectrum_background=spectrum_background,
-    ...                      solar_angle=solar_angle, interpolator=interpolator)
-    (0.40902652485981245, 0.13745719301229542, 147.7245690107951, 367.4090547297111)
+    ...                      solar_angle=solar_angle, interpolator=interpolator, algorithm=1)
+    (0.4089303296055291, 0.155201675059351, 138.79357872804923, 364.58404302094834)
     """
+
+    if spectrum_shade is None:
+        spectrum_shade = np.zeros_like(spectrum_target)
 
     if interpolator is not None:
         bands = interpolator.bands
@@ -60,21 +80,31 @@ def speedy_invert(spectrum_target, spectrum_background, solar_angle,
         grain_sizes = interpolator.grain_sizes
         reflectances = interpolator.reflectances
 
-    x0 = np.array([0.5, 0.05, 10, 250])
-    return spires.core.get_fsca(spectrum_background=spectrum_background, spectrum_target=spectrum_target,
-                                solar_angle=solar_angle, bands=bands, solar_angles=solar_angles,
-                                dust_concentrations=dust_concentrations, grain_sizes=grain_sizes, lut=reflectances,
-                                max_eval=100, x=x0)
+    return spires.core.invert(spectrum_background=spectrum_background, spectrum_target=spectrum_target,
+                              spectrum_shade=spectrum_shade,
+                              solar_angle=solar_angle, bands=bands, solar_angles=solar_angles,
+                              dust_concentrations=dust_concentrations, grain_sizes=grain_sizes, lut=reflectances,
+                              max_eval=max_eval, x0=x0, algorithm=algorithm)
 
 
-def speedy_invert_array(spectra_targets, spectra_backgrounds, obs_solar_angles,
-                        bands=None, solar_angles=None, dust_concentrations=None, grain_sizes=None, reflectances=None,
-                        interpolator=None, lut_dataarray=None):
+def speedy_invert_array1d(spectra_targets, spectra_backgrounds, obs_solar_angles, spectrum_shade=None,
+                          bands=None, solar_angles=None, dust_concentrations=None, grain_sizes=None, reflectances=None,
+                          interpolator=None, lut_dataarray=None, max_eval=100,
+                          x0=np.array([0.5, 0.05, 10, 250]), algorithm=2):
     """
     Inverts the snow reflectance spectrum for an array of spectrum backgrounds, spectrum targets, and solar angles
 
     Parameters
     ----------
+    max_eval: int
+        maximum number of iterations
+    algorithm: int
+        Algorithm to use for inverting the snow reflectance spectrum.
+        1: LN_COBYLA
+        2: LN_NELDERMEAD
+        3: LD_SLSQP
+    x0: array-like
+        Initial guess. x0[0]: fsca, x0[1]: fshade, x0[2]: dust_conc, x0[3]: grain_size
     spectra_targets: numpy.ndarray
         a 2d array holding the mixed spectrum to invert
             - dim1: locations/observations (e.g. flattend space). Must be same length as `spectra_background`
@@ -83,6 +113,8 @@ def speedy_invert_array(spectra_targets, spectra_backgrounds, obs_solar_angles,
         a 2D array holding the background (R_0) spectra.
             - dim1: locations/observations (e.g. flattend space). Must be same length as `spectra_target`
             - dim2: bands
+    spectrum_shade: numpy.ndarray
+        an array holding the shaded spectrum
     obs_solar_angles: numpy.ndarray
         the solar angles of spectrum targets. Must be of same length as spectra_background.
     bands: numpy.ndarray
@@ -112,7 +144,7 @@ def speedy_invert_array(spectra_targets, spectra_backgrounds, obs_solar_angles,
                 - results[:, 3] = grain_size
 
     Examples
-    -------
+    ----------
     >>> import spires
     >>> spectra_targets = np.array([[0.3424,0.366,0.3624,0.38932347,0.41624767,0.39567757,0.0704336,0.06267947,0.3792],
     ...                            [0.2866,0.3046,0.324,0.34468558,0.35373732,0.35651454,0.1807259,0.16601688,0.3488]])
@@ -120,11 +152,14 @@ def speedy_invert_array(spectra_targets, spectra_backgrounds, obs_solar_angles,
     ...                                [0.1002,0.1492,0.2088,0.2179780,0.2314920,0.2514020,0.3103066,0.2875081,0.2546]])
     >>> obs_solar_angles = np.array([55.73733298, 55.83733298])
     >>> interpolator = spires.interpolator.LutInterpolator(lut_file='tests/data/lut_sentinel2b_b2to12_3um_dust.mat')
-    >>> spires.speedy_invert_array(spectra_targets=spectra_targets, spectra_backgrounds=spectra_backgrounds,
-    ...                            obs_solar_angles=obs_solar_angles, interpolator=interpolator)
+    >>> spires.speedy_invert_array1d(spectra_targets=spectra_targets, spectra_backgrounds=spectra_backgrounds,
+    ...                            obs_solar_angles=obs_solar_angles, interpolator=interpolator, algorithm=1)
     array([[4.06627881e-01, 1.45134251e-01, 1.37503982e+02, 3.61158500e+02],
            [2.63873228e-01, 1.83226478e-01, 1.94343159e+02, 3.80170927e+02]])
+
     """
+    if spectrum_shade is None:
+        spectrum_shade = np.zeros_like(spectra_targets[0])
 
     if interpolator is not None:
         bands = interpolator.bands
@@ -135,10 +170,13 @@ def speedy_invert_array(spectra_targets, spectra_backgrounds, obs_solar_angles,
 
     n = spectra_targets.shape[0]
     results = np.empty((n, 4), dtype=np.double)
-    spires.core.get_fscas(spectra_targets=spectra_targets, spectra_backgrounds=spectra_backgrounds,
-                          obs_solar_angles=obs_solar_angles, bands=bands, solar_angles=solar_angles,
-                          dust_concentrations=dust_concentrations,
-                          grain_sizes=grain_sizes, lut=reflectances, results=results)
+
+    spires.core.invert_array(spectra_targets=spectra_targets, spectra_backgrounds=spectra_backgrounds,
+                             spectrum_shade=spectrum_shade,
+                             obs_solar_angles=obs_solar_angles, bands=bands, solar_angles=solar_angles,
+                             dust_concentrations=dust_concentrations,
+                             grain_sizes=grain_sizes, lut=reflectances, results=results,
+                             max_eval=max_eval, x0=x0, algorithm=algorithm)
     return results
 
 
@@ -191,8 +229,9 @@ def snow_diff_4(x, spectrum_target, spectrum_background, solar_angle, interpolat
     >>> spectrum_target = np.array([0.3424,0.366,0.3624,0.38932347,0.41624767,0.39567757,0.07043362,0.06267947, 0.3792])
     >>> spectrum_background = np.array([0.0182,0.0265,0.0283,0.056067,0.095432,0.12036866,0.12491679,0.07888655,0.1406])
     >>> shade = np.array([0,0,0,0,0,0,0,0,0])
-    >>> spires.snow_diff_4(x=x, spectrum_target=spectrum_target, spectrum_background=spectrum_background,
+    >>> diff = spires.snow_diff_4(x=x, spectrum_target=spectrum_target, spectrum_background=spectrum_background,
     ...                    solar_angle=solar_angle, interpolator=interpolator, shade=shade)
+    >>> diff
     0.08870043573321955
     """
 
@@ -262,7 +301,8 @@ def snow_diff_3(x, spectrum_target, solar_angle, interpolator, shade):
     return distance
 
 
-def speedy_invert_scipy(interpolator: spires.interpolator.LutInterpolator, spectrum_target, spectrum_background, solar_angle, shade=None,
+def speedy_invert_scipy(interpolator: spires.interpolator.LutInterpolator, spectrum_target, spectrum_background,
+                        solar_angle, shade=None,
                         scipy_options=None, mode=3, method='SLSQP'):
     """
     Invert snow spectra using scipy.optimize.minimize (rather than NLOPT).
@@ -298,11 +338,11 @@ def speedy_invert_scipy(interpolator: spires.interpolator.LutInterpolator, spect
     res: scipy.optimize.OptimizeResult
         see [scipy.optimize.OptimizeResult](https://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.OptimizeResult.html#scipy.optimize.OptimizeResult)
         res.x contains the solution of the optimization problem, with
-            - x[0]: f_sca
-            - x[1]: f_shade
-            - x[2]: dust_concentration
-            - x[3]: grain_size
-    model_ref: numpy.array
+        - x[0]: f_sca
+        - x[1]: f_shade
+        - x[2]: dust_concentration
+        - x[3]: grain_size
+    model_ref: numpy.ndarray
         the optimized modelled reflectance
 
     Examples
@@ -374,8 +414,20 @@ def speedy_invert_scipy(interpolator: spires.interpolator.LutInterpolator, spect
     return res, model_refl
 
 
-def index_to_value(value, coords):
-    idx = value * coords.size
+def index_to_value(index, coords):
+    """
+    Converts an index value to a coordinate value
+
+    Parameters
+    ----------
+    index:
+    coords: numpy.array
+
+    Returns
+    -------
+
+    """
+    idx = index * coords.size
     l_idx = int(idx)
     r_idx = l_idx + 1
     diff = coords[r_idx] - coords[l_idx]
@@ -383,8 +435,9 @@ def index_to_value(value, coords):
     return coords[l_idx] + dist * diff
 
 
-def speedy_invert_scipy_cobyla(interpolator: spires.interpolator.LutInterpolator,
-                               spectrum_target, spectrum_background, solar_angle):
+def speedy_invert_scipy_normalized(interpolator: spires.interpolator.LutInterpolator,
+                                   spectrum_target, spectrum_background, solar_angle, spectrum_shade=None,
+                                   method='COBYLA'):
     """
     Perform speedy invert with COBYLA solver. The scipy COBYLA solver does not allow us to specify
     initial steps (rhobeg) for each parameter separately. We therefore need to scale the problem,
@@ -392,17 +445,26 @@ def speedy_invert_scipy_cobyla(interpolator: spires.interpolator.LutInterpolator
 
     Parameters
     ----------
-    interpolator
-    spectrum_target
-    spectrum_background
-    solar_angle
+    method: str
+        the scipy solver method
+    spectrum_shade: np.ndarray
+        the shade spectrum
+    interpolator: spires.interpolator.LutInterpolator
+        A lut interpolator
+    spectrum_target: np.ndarray
+        the spectrum target
+    spectrum_background: np.ndarray
+        the background spectrum
+    solar_angle: float
+        the solar angle of the spectrum target
 
     Returns
     -------
 
     """
+    if spectrum_shade is None:
+        spectrum_shade = np.zeros_like(spectrum_target)
 
-    method = 'COBYLA'
     scipy_options = {'disp': False, 'rhobeg': 0.05, 'maxiter': 100, 'tol': 1e-4}
 
     bounds_fsca = [0, 1]
@@ -419,6 +481,7 @@ def speedy_invert_scipy_cobyla(interpolator: spires.interpolator.LutInterpolator
                                   bounds=bounds,
                                   args=(spectrum_background,
                                         spectrum_target,
+                                        spectrum_shade,
                                         solar_angle,
                                         interpolator.bands,
                                         interpolator.solar_angles,
@@ -432,4 +495,3 @@ def speedy_invert_scipy_cobyla(interpolator: spires.interpolator.LutInterpolator
 
     model_refl = interpolator.interpolate_all(solar_angle=solar_angle, dust_concentration=res.x[2], grain_size=res.x[3])
     return res, model_refl
-

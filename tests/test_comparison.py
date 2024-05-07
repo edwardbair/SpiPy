@@ -61,19 +61,29 @@ def test_nlop_cobyla():
     res = spires.speedy_invert(interpolator=interpolator,
                                spectrum_target=spectrum_target,
                                spectrum_background=spectrum_background,
-                               solar_angle=solar_angle)
+                               solar_angle=solar_angle,
+                               algorithm=1)
+
+    expected = (4.228997e-01, 8.201566e-02, 1.520627e+02, 3.418598e+02)
+    np.testing.assert_allclose(res, expected, rtol=1e-4)
 
 
-    expected = (0.4224108330374164, 0.08546684527784018, 150.15658977393718, 343.43691375842445)
-    np.testing.assert_allclose(res, expected, rtol=1e-5)
-    print('NLOPT COBYLA', res)
+def test_nlop_neldermead():
+    res = spires.speedy_invert(interpolator=interpolator,
+                               spectrum_target=spectrum_target,
+                               spectrum_background=spectrum_background,
+                               solar_angle=solar_angle,
+                               algorithm=2)
+
+    expected = (4.375782e-01, 7.412245e-03, 1.513136e+02, 5.179564e+02)
+    np.testing.assert_allclose(res, expected, rtol=1e-4)
 
 
 def test_scipy_cobyla():
-    res, model_refl = spires.speedy_invert_scipy_cobyla(interpolator=interpolator,
-                                                        spectrum_target=spectrum_target,
-                                                        spectrum_background=spectrum_background,
-                                                        solar_angle=solar_angle)
+    res, model_refl = spires.speedy_invert_scipy_normalized(interpolator=interpolator,
+                                                            spectrum_target=spectrum_target,
+                                                            spectrum_background=spectrum_background,
+                                                            solar_angle=solar_angle)
     expected = np.array([3.977390e-01, 7.790419e-02, 9.844864e+01, 2.311845e+02])
     np.testing.assert_allclose(res.x, expected, rtol=1e-5)
-    print('Scipy COYLA:', res.x)
+

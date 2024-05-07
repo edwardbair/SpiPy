@@ -5,3 +5,4 @@ __pycache__/
 /spires/spires_wrap.cpp
 /spires/_core.cpython-312-darwin.so
 /spires/core.py
+/doc/build/

@@ -54,7 +54,7 @@ Tox is also setup in `tox.ini`.
 We can build wheels e.g. for python 3.9, 3.10, 3.11, 3.12 with (e.g. specified in `tox.ini` in the `envlist` as `py39`)
 
 ```bash
-tox -e build py39,py310,py311,py312
+tox -e py39,py310,py311,py312
 ```
 
 Create a source distribution:

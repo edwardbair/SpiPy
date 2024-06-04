@@ -23,6 +23,12 @@ namespace std {
     (double* lut, int n_bands, int n_solar_angles, int n_dust_concentrations, int n_grain_sizes)
 };
 
+%apply(double* IN_ARRAY3, int DIM1, int DIM2, int DIM3){
+    (double* spectra_backgrounds, int n_background_y, int n_background_x, int n_bands_backgrounds),
+    (double* spectra_targets, int n_target_y, int n_target_x, int n_bands_target)
+}
+
+
 %apply (double* IN_ARRAY1, int DIM1) { 
     (double* spectrum_background, int len_background),
     (double* spectrum_target, int len_target),
@@ -36,19 +42,21 @@ namespace std {
 
 %apply (double* INPLACE_ARRAY1, int DIM1) {
     (double* x, int len_x)
-
 }
 
 %apply (double* IN_ARRAY2, int DIM1, int DIM2) {
        (double* spectra_backgrounds, int n_obs_backgrounds, int n_bands_backgrounds),
-       (double* spectra_targets, int n_obs_target, int n_bands_target)
+       (double* spectra_targets, int n_obs_target, int n_bands_target),
+       (double* obs_solar_angles, int n_obs_solar_y, int n_obs_solar_x)
 }
 
 %apply(double* INPLACE_ARRAY2, int DIM1, int DIM2) {
     (double* results, int n_obs, int n_results)
  }
 
-
+%apply(double* INPLACE_ARRAY3, int DIM1, int DIM2, int DIM3) {
+    (double* results, int n_y, int n_x, int n_results)
+}
 
 %typemap(out) double* {
     // Convert the returned pointer to a NumPy array

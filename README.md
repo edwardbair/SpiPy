@@ -45,11 +45,23 @@ To build the exension and create the swig bindings, run
 python3 setup.py build_ext --inplace
 ```
 
-To create a wheel:
+This would create a wheel for the interpreter in the active environment
+```bash
+python setup.py bdist_wheel
+```
+
+Tox is also setup in `tox.ini`. 
+We can build wheels e.g. for python 3.9, 3.10, 3.11, 3.12 with (e.g. specified in `tox.ini` in the `envlist` as `py39`)
 
 ```bash
-python setup.py sdist bdist_wheel
+tox -e build py39,py310,py311,py312
 ```
+
+Create a source distribution:
+```bash
+python setup.py sdist
+```
+
 
 ## Usage
 the `examples/` folder contains some notebooks with use cases.

@@ -3,7 +3,6 @@ import spires.core
 import numpy as np
 import scipy.interpolate
 
-
 algorithm_dict = {'COBYLA': 1,
                   'NELDER_MEAD': 2,
                   'SLSQP': 3}
@@ -171,12 +170,46 @@ def speedy_invert_array1d(spectra_targets, spectra_backgrounds, obs_solar_angles
     n = spectra_targets.shape[0]
     results = np.empty((n, 4), dtype=np.double)
 
-    spires.core.invert_array(spectra_targets=spectra_targets, spectra_backgrounds=spectra_backgrounds,
-                             spectrum_shade=spectrum_shade,
-                             obs_solar_angles=obs_solar_angles, bands=bands, solar_angles=solar_angles,
-                             dust_concentrations=dust_concentrations,
-                             grain_sizes=grain_sizes, lut=reflectances, results=results,
-                             max_eval=max_eval, x0=x0, algorithm=algorithm)
+    spires.core.invert_array1d(spectra_targets=spectra_targets, spectra_backgrounds=spectra_backgrounds,
+                               spectrum_shade=spectrum_shade,
+                               obs_solar_angles=obs_solar_angles, bands=bands, solar_angles=solar_angles,
+                               dust_concentrations=dust_concentrations,
+                               grain_sizes=grain_sizes, lut=reflectances, results=results,
+                               max_eval=max_eval, x0=x0, algorithm=algorithm)
+    return results
+
+
+def speedy_invert_array2d(spectra_targets, spectra_backgrounds, obs_solar_angles, spectrum_shade=None,
+                          bands=None, solar_angles=None, dust_concentrations=None, grain_sizes=None, reflectances=None,
+                          interpolator=None, lut_dataarray=None, max_eval=100,
+                          x0=np.array([0.5, 0.05, 10, 250]), algorithm=2):
+
+    spectra_targets = spectra_targets.transpose('y', 'x', 'band')
+    spectra_backgrounds = spectra_backgrounds.transpose('y', 'x', 'band')
+    obs_solar_angles = obs_solar_angles.transpose('y', 'x')
+
+    if spectrum_shade is None:
+        spectrum_shade = np.zeros(spectra_targets.band.size, dtype=np.double)
+
+    if interpolator is not None:
+        bands = interpolator.bands
+        solar_angles = interpolator.solar_angles
+        dust_concentrations = interpolator.dust_concentrations
+        grain_sizes = interpolator.grain_sizes
+        reflectances = interpolator.reflectances
+
+    results = np.empty((spectra_targets.y.size, spectra_targets.x.size, 4), dtype=np.double)
+
+    spires.core.invert_array2d(spectra_backgrounds=spectra_backgrounds,
+                               spectra_targets=spectra_targets,
+                               spectrum_shade=spectrum_shade,
+                               obs_solar_angles=obs_solar_angles,
+                               bands=bands, solar_angles=solar_angles, dust_concentrations=dust_concentrations,
+                               grain_sizes=grain_sizes, lut=reflectances,
+                               results=results,
+                               max_eval=max_eval,
+                               x0=x0,
+                               algorithm=algorithm)
     return results
 
 

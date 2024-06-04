@@ -1,6 +1,8 @@
 #include <iostream>
 #include <vector>
 #include "spires.h"
+#include <array>
+#include <cmath>
 
 
 double linearInterpolate(double y1, double y2, double x, double x1, double x2) {
@@ -21,7 +23,7 @@ double interpolate_idx(double* lut, int n_bands, int n_solar_angles, int n_dust_
     }
 
     // We only interpolate in solar_angle, dust_concentration, and grain_size dimension; 
-    // therefore, we can just select the 3D cube for the band and interolate on this one
+    // therefore, we can just select the 3D cube for the band and interpolate on this one
     int band_idx_floor = static_cast<int>(band_idx);
     int start_idx = band_idx_floor * (n_solar_angles * n_dust_concentrations * n_grain_sizes);
     double* cube = lut + start_idx; // Pointing to the beginning of the lut
@@ -645,7 +647,7 @@ std::vector<double> invert_scaled(double* spectrum_background, int len_backgroun
 }
 
 
-void invert_array(double* spectra_backgrounds, int n_obs_backgrounds, int n_bands_backgrounds,
+void invert_array1d(double* spectra_backgrounds, int n_obs_backgrounds, int n_bands_backgrounds,
                   double* spectra_targets, int n_obs_target, int n_bands_target,
                   double* spectrum_shade, int len_shade,
                   double* obs_solar_angles, int n_obs_solar_angles,
@@ -692,3 +694,53 @@ void invert_array(double* spectra_backgrounds, int n_obs_backgrounds, int n_band
 
 
 
+
+void invert_array2d(double* spectra_backgrounds, int n_background_y, int n_background_x, int n_bands_backgrounds,
+                    double* spectra_targets, int n_target_y, int n_target_x, int n_bands_target,
+                    double* spectrum_shade, int len_shade,
+                    double* obs_solar_angles, int n_obs_solar_y, int n_obs_solar_x,
+                    double* bands, int len_bands,
+                    double* solar_angles, int len_solar_angles,
+                    double* dust_concentrations, int len_dust_concentrations,
+                    double* grain_sizes, int len_grain_sizes,
+                    double* lut, int n_bands, int n_solar_angles, int n_dust_concentrations, int n_grain_sizes,
+                    double* results, int n_y, int n_x, int n_results,
+                    int max_eval,
+                    std::vector<double> x0,
+                    int algorithm) {
+
+    // n_obs_backgrounds == n_obs_target == n_obs_solar_angles
+    // n_bands_backgrounds == n_bands_target == n_obs_solar_angles == len_bands
+
+    for (size_t y = 0; y < n_target_y; y++) {
+        for (size_t x = 0; x < n_target_x; x++) {
+            int obs = (x + y * n_target_x);
+
+            //std::cout << obs << std::endl;
+            int n = obs * n_bands_target;
+
+            double* spectrum_background = &spectra_backgrounds[n];
+            double* spectrum_target = &spectra_targets[n];
+            double solar_angle = obs_solar_angles[obs];
+
+            std::vector<double> result = invert(spectrum_background, len_bands,
+                                                spectrum_target, len_bands,
+                                                spectrum_shade, len_shade,
+                                                solar_angle,
+                                                bands, len_bands,
+                                                solar_angles,  len_solar_angles,
+                                                dust_concentrations,  len_dust_concentrations,
+                                                grain_sizes,  len_grain_sizes,
+                                                lut, n_bands, n_solar_angles, n_dust_concentrations, n_grain_sizes,
+                                                max_eval,
+                                                x0,
+                                                algorithm
+                                           );
+
+            for (size_t i = 0; i < result.size(); ++i) {
+                //results[obs * i] = result[i];
+                results[obs * n_results + i] = result[i];;
+            }
+        }
+    }
+}

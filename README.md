@@ -23,27 +23,32 @@ brew install git-lfs
 git lfs install
 ```
 
-## Create Documentation
+## Install
+We will need nlopt, gcc, g++/gxx and swig. E.g. with conda (from conda-forge) or apt
 
 ```bash
-pip install Sphinx
-pip install sphinx-automodapi
-pip install sphinx-markdown-tables
-pip install myst-parser
-pip install nbsphinx
-pip install numpydoc
-pip install pydata-sphinx-theme
+conda install -c conda-forge swig gxx gcc nlopt
 ```
 
 ```bash
-cd doc/
-make html
+sudo apt install g++ gcc swig nlopt-dev
 ```
-
-## Setup
 
 ```bash
 pip3 install .
+```
+
+## Build 
+To build the exension and create the swig bindings, run
+
+```bash
+python3 setup.py build_ext --inplace
+```
+
+To create a wheel:
+
+```bash
+python setup.py sdist bdist_wheel
 ```
 
 ## Usage
@@ -65,16 +70,33 @@ Do the doctests
 pytest --doctest-modules
 ```
 
+## Documentation
+
+```bash
+pip install Sphinx
+pip install sphinx-automodapi
+pip install sphinx-markdown-tables
+pip install myst-parser
+pip install nbsphinx
+pip install numpydoc
+pip install pydata-sphinx-theme
+```
+
+```bash
+cd doc/
+make html
+```
 
 
-## SpiPy Swig extensions
+
+## Swig extensions
 
 We offloaded bottleneck functions to C++.
 To build the exension and create the swig bindings, run
 
 ```bash
 python3 setup.py build_ext --inplace
-````
+```
 
 How we would build the shared object by itself:
 ```bash
@@ -88,25 +110,23 @@ or:
 ```bash
 cd spires
 make
-````
+```
 
 ### To-do
-- [ ] there might be something to gain when inverting for a single location over multiple timesteps as we can keep
-  R_0 constant
+- [ ] there might be something to gain when inverting for a single location over multiple timesteps as we can keep R_0 constant
 - [ ] use Xarrays as inputs
   - [ ] for the interpolator
   - [ ] for target spectra / background spectra
 
 ### issues
 - [x] swig interpolator and RegularGridInterpolator behave differently when a coordinate is not a linspace.
-- [ ] cannot get the SLSQP solver to work in c++; using LN_COBYLA instead leading to slightly different results
-- [ ] we can set use COBYLA in scipy, however, we cannot set rhobeg for each dimension individually.
+- [x] cannot get the SLSQP solver to work in c++; using LN_COBYLA instead leading to slightly different results
+- [x] we can set use COBYLA in scipy, however, we cannot set rhobeg for each dimension individually.
   (even though it accepts a list or array, it only eats the first element). Since the different coordinates are on wahy
  different scales, this leads to suboptimal solutions. --> We have to scale the problem
-- [ ] the interpolator speedup ix 3000x, while the spectrum difference computation speedup is only 300x. We must be loosing some cycles during conversions to arrays or, more likely: because numpy doesnt' own the data
+- [x] the interpolator speedup ix 3000x, while the spectrum difference computation speedup is only 300x. We must be loosing some cycles during conversions to arrays or, more likely: because numpy doesnt' own the data
 
 ### Performance evaluation
-
 
 #### Interpolator
 - [x] Baseline: RegularGridInterpolator with 4 dimensions. 1.07 ms

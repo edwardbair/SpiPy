@@ -6,3 +6,6 @@ __pycache__/
 /spires/_core.cpython-312-darwin.so
 /spires/core.py
 /doc/build/
+/venv/
+/spires/.vscode/
+/dist/

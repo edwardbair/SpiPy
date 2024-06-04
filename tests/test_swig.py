@@ -8,7 +8,8 @@ import pytest
 interpolator = spires.LutInterpolator(lut_file='tests/data/lut_sentinel2b_b2to12_3um_dust.mat', )
 
 spectrum_target = np.array([0.3424, 0.366, 0.3624, 0.38932347, 0.41624767, 0.39567757, 0.07043362, 0.06267947, 0.3792])
-spectrum_background = np.array([0.0182, 0.0265, 0.0283, 0.05606749, 0.09543234, 0.12036866, 0.12491679, 0.07888655, 0.1406])
+spectrum_background = np.array(
+    [0.0182, 0.0265, 0.0283, 0.05606749, 0.09543234, 0.12036866, 0.12491679, 0.07888655, 0.1406])
 spectrum_shade = np.zeros_like(spectrum_target)
 solar_angle = 55.73733298
 
@@ -81,19 +82,19 @@ def test_invert_array():
     spectra_targets = np.tile(spectrum_target, (n, 1))
     obs_solar_angles = np.repeat(solar_angle, n)
 
-    spires.core.invert_array(spectra_backgrounds=spectra_backgrounds,
-                             spectra_targets=spectra_targets,
-                             spectrum_shade=spectrum_shade,
-                             obs_solar_angles=obs_solar_angles,
-                             bands=interpolator.bands,
-                             solar_angles=interpolator.solar_angles,
-                             dust_concentrations=interpolator.dust_concentrations,
-                             grain_sizes=interpolator.grain_sizes,
-                             lut=interpolator.reflectances,
-                             results=results,
-                             max_eval=100,
-                             x0=x0,
-                             algorithm=1)
+    spires.core.invert_array1d(spectra_backgrounds=spectra_backgrounds,
+                               spectra_targets=spectra_targets,
+                               spectrum_shade=spectrum_shade,
+                               obs_solar_angles=obs_solar_angles,
+                               bands=interpolator.bands,
+                               solar_angles=interpolator.solar_angles,
+                               dust_concentrations=interpolator.dust_concentrations,
+                               grain_sizes=interpolator.grain_sizes,
+                               lut=interpolator.reflectances,
+                               results=results,
+                               max_eval=100,
+                               x0=x0,
+                               algorithm=1)
 
     expected = np.array([[4.089303e-01, 1.552017e-01, 1.387936e+02, 3.645840e+02],
                          [4.089303e-01, 1.552017e-01, 1.387936e+02, 3.645840e+02],

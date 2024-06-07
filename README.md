@@ -39,7 +39,7 @@ pip3 install .
 ```
 
 ## Build 
-To build the exension and create the swig bindings, run
+To build the extension and create the swig bindings, run
 
 ```bash
 python3 setup.py build_ext --inplace
@@ -56,6 +56,9 @@ We can build wheels e.g. for python 3.9, 3.10, 3.11, 3.12 with (e.g. specified i
 ```bash
 tox -e py39,py310,py311,py312
 ```
+
+This is super odd. When using a pyenv virtual environment/system interpreter, the wheel for 3.9 is created for x86, not arm64 on a M1 mac.
+When using a conda environment, the wheel for 3.9 is created correctly.
 
 Create a source distribution:
 ```bash

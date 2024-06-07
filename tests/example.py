@@ -3,7 +3,6 @@ import spires.core
 import spires
 import numpy as np
 
-
 r = xarray.load_dataset('tests/data/sentinel_r.nc')
 r0 = xarray.load_dataset('tests/data/sentinel_r0.nc')
 ts = r.sel(time='2024-02-25').squeeze().drop_vars('time')

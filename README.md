@@ -56,7 +56,7 @@ Tox is also setup in `tox.ini`.
 We can build wheels e.g. for python 3.9, 3.10, 3.11, 3.12 with (e.g. specified in `tox.ini` in the `envlist` as `py39`)
 
 ```bash
-tox -e py39,py310,py311,py312
+    tox -e py39,py310,py311,py312
 ```
 This is super odd. When using a pyenv virtual environment/system interpreter, the wheel for 3.9 is created for x86, not arm64 on a M1 mac.
 When using a conda environment, the wheel for 3.9 is created correctly.

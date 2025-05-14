@@ -20,7 +20,8 @@ def speedy_invert(spectrum_target, spectrum_background, solar_angle, spectrum_sh
     spectrum_background: numpy.ndarray
         the background (R_0) spectrum
     spectrum_target: numpy.ndarray
-        the mixed spectrum to invert. Has to be same length as `spectrum_background`
+        the mixed spectrum to invert. Has to be same length as `spectrum_background`.
+        Has to have same band order as `spectrum_background` and `bands`
     spectrum_shade: numpy.ndarray
         the idea; shaded spectrum. Has to be same length as `spectrum_target`
     solar_angle: float
@@ -107,7 +108,7 @@ def speedy_invert_array1d(spectra_targets, spectra_backgrounds, obs_solar_angles
     spectra_targets: numpy.ndarray
         a 2d array holding the mixed spectrum to invert
             - dim1: locations/observations (e.g. flattend space). Must be same length as `spectra_background`
-            - dim2: bands
+            - dim2: bands. Has to have same order as `spectra_background` and `bands`
     spectra_backgrounds: numpy.ndarray
         a 2D array holding the background (R_0) spectra.
             - dim1: locations/observations (e.g. flattend space). Must be same length as `spectra_target`

@@ -3,9 +3,12 @@ __pycache__/
 *.egg-info*
 /build
 /spires/spires_wrap.cpp
-/spires/_core.cpython-312-darwin.so
+/spires/_core.cpython*
 /spires/core.py
 /doc/build/
 /venv/
 /spires/.vscode/
 /dist/
+*.DS_Store
+*.aux.xml
+.idea/

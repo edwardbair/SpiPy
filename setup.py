@@ -5,9 +5,13 @@ import setuptools
 from setuptools.command.build_py import build_py as _build_py
 import versioneer
 
-
+# For ARM
 NLOP_LIB_DIRS = ['/opt/homebrew/Cellar/nlopt/2.7.1/lib']
 NLOP_INCLUDE_DIRS = ['/opt/homebrew/Cellar/nlopt/2.7.1/include']
+
+# For x86
+NLOP_LIB_DIRS = ['/usr/local/Cellar/nlopt/2.7.1/lib']
+NLOP_INCLUDE_DIRS = ['/usr/local/Cellar/nlopt/2.7.1/include']
 
 INCLUDE_DIRS = NLOP_INCLUDE_DIRS + [numpy.get_include()]
 

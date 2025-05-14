@@ -3,11 +3,11 @@ import spires.core
 import spires
 import numpy as np
 
-r = xarray.load_dataset('tests/data/sentinel_r.nc')
-r0 = xarray.load_dataset('tests/data/sentinel_r0.nc')
+r = xarray.load_dataset('data/sentinel_r.nc')
+r0 = xarray.load_dataset('data/sentinel_r0.nc')
 ts = r.sel(time='2024-02-25').squeeze().drop_vars('time')
 
-interpolator = spires.LutInterpolator(lut_file='tests/data/lut_sentinel2b_b2to12_3um_dust.mat')
+interpolator = spires.LutInterpolator(lut_file='data/lut_sentinel2b_b2to12_3um_dust.mat')
 bands = interpolator.bands
 solar_angles = interpolator.solar_angles
 dust_concentrations = interpolator.dust_concentrations

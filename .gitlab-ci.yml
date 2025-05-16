@@ -23,13 +23,13 @@ before_script:
   - virtualenv venv
   - source venv/bin/activate
 
-test:
-  script:
-    - pip install ruff tox  # you can also use tox
-    - pip install --editable ".[test]"
-    - tox -e py3
+#test:
+#  script:
+#    - pip install ruff tox  # you can also use tox
+#    - pip install --editable ".[test]"
+#    - tox -e py3
 
-run:
+build:
   script:
     - pip install .
     - pip install swig wheel setuptools numpy

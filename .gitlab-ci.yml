@@ -31,9 +31,8 @@ before_script:
 
 build:
   script:
-    - pip install .
     - pip install swig wheel setuptools numpy
-    # run the command here
+    - pip install .
   artifacts:
     paths:
       - build/*

@@ -31,7 +31,8 @@ before_script:
 
 build:
   script:
-    - apt update && apt install -y swig
+    - apt update 
+    - apt install -y swig libnlopt-dev
     - pip install swig wheel setuptools numpy
     - pip install .
   artifacts:

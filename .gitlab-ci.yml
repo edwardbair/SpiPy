@@ -33,7 +33,6 @@ before_script:
 
 build:
   script:
-    - apt update 
     - pip install swig wheel setuptools numpy
     - pip install .
   artifacts:

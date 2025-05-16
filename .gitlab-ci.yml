@@ -32,6 +32,7 @@ test:
 run:
   script:
     - pip install .
+    - pip install swig wheel setuptools numpy
     # run the command here
   artifacts:
     paths:

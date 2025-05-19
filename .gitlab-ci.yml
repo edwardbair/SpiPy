@@ -21,26 +21,20 @@ cache:
 before_script:
   - python --version ; pip --version  # For debugging
   - conda create -y -n buildenv python=3.13
-  - source activate buildenv
+  - conda activate buildenv
   - conda install -c conda-forge nlopt swig gxx gcc
   - pip install .
-  #- pip install virtualenv
-  #- virtualenv venv
-  #- source venv/bin/activate
-  #- apt update
-  #- apt install -y build-essential libnlopt-dev cmake swig
 
-#test:
-#  script:
-#    - pip install ruff tox  # you can also use tox
-#    - pip install --editable ".[test]"
-#    - tox -e py3
+test:
+  script:
+    - pip install ruff tox  # you can also use tox
+    - pip install --editable ".[test]"
+    - tox -e py3
 
 build:
   script:
     - python setup.py build_ext --inplace --verbose
-    #- pip install swig wheel setuptools numpy
-    #- pip install .
+
   artifacts:
     paths:
       - build/*
@@ -48,9 +42,9 @@ build:
 pages:
   script:
     - pip install sphinx sphinx-rtd-theme
-    #- cd doc
-    #- make html
-    #- mv build/html/ ../public/
+    - cd doc
+    - make html
+    - mv build/html/ ../public/
   artifacts:
     paths:
       - public

@@ -4,6 +4,7 @@ import numpy
 import setuptools
 from setuptools.command.build_py import build_py as _build_py
 import versioneer
+import os
 
 
 conda_prefix = os.environ.get("CONDA_PREFIX", "/usr")  # fallback if not in conda

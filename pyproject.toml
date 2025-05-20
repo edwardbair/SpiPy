@@ -44,6 +44,7 @@ docs = [
     "nbsphinx",
     "sphinx_markdown_tables",
     "pydata_sphinx_theme"
+    "dask",
 ]
 
 

@@ -33,6 +33,7 @@ def invert_ufunc(r, r0, lut_interpolator, solar_z, shade, mode, cluster):
                              dask_gufunc_kwargs={'allow_rechunk': False, 'output_sizes': {'property': 4}},
                              output_dtypes=[float],
                              vectorize=False)
+    
     with dask.distributed.Client(cluster) as client:
         res = res.compute()
 

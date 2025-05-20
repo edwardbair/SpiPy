@@ -5,7 +5,8 @@
 
 # Official language image. Look for the different tagged releases at:
 # https://hub.docker.com/r/library/python/tags/
-image: python:latest
+#image: python:latest
+image: continuumio/miniconda3
 
 # Change pip's cache directory to be inside the project directory since we can
 # only cache local items.
@@ -19,30 +20,30 @@ cache:
 
 before_script:
   - python --version ; pip --version  # For debugging
-  - pip install virtualenv
-  - virtualenv venv
-  - source venv/bin/activate
+  - conda create -y -n buildenv python=3.13
+  - source activate buildenv
+  - conda install -c conda-forge nlopt swig gxx gcc make 
+  - pip install .
 
 test:
-  script:
-    - pip install ruff tox  # you can also use tox
+  script:    
     - pip install --editable ".[test]"
     - tox -e py3
 
-run:
+build:
   script:
-    - pip install .
-    # run the command here
+    - python setup.py build_ext --inplace --verbose    
+
   artifacts:
     paths:
       - build/*
 
-pages:
+docs:
   script:
-    - pip install sphinx sphinx-rtd-theme
-    #- cd doc
-    #- make html
-    #- mv build/html/ ../public/
+    - pip install --editable ".[docs]"    
+    - cd doc
+    - make html
+    - mv build/html/ ../public/
   artifacts:
     paths:
       - public

@@ -21,7 +21,8 @@ sys.path.insert(0, os.path.abspath('../../'))
 extensions = ['sphinx.ext.autodoc',
               'sphinx.ext.autosummary',
               'sphinx_automodapi.automodapi',
-              'sphinx.ext.napoleon',
+              'sphinx.ext.napoleon', # for math
+              'sphinx.ext.mathjax', # for math
               'myst_parser',    # markdown parsing
               'nbsphinx',       # Notebook integration
               'sphinx_markdown_tables'
@@ -37,7 +38,7 @@ autodoc_default_flags = ['members', 'undoc-members', 'private-members', 'special
 
 html_theme = 'pydata_sphinx_theme'
 
-html_static_path = ['_static']
+#html_static_path = ['_static']
 
 autosummary_generate = True# ['spires.interpolate']
 #autosummary_generate = ['autosummary/*.rst']

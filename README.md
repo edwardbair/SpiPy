@@ -31,7 +31,7 @@ conda install -c conda-forge swig gxx gcc nlopt
 ```
 
 ```bash
-sudo apt install g++ gcc swig nlopt-dev
+sudo apt install g++ gcc swig libnlopt-dev
 ```
 
 ```bash
@@ -48,8 +48,9 @@ python3 setup.py build_ext --inplace
 
 ### Create wheels
 This would create a wheel for the interpreter in the active environment
+
 ```bash
-    python setup.py bdist_wheel
+python setup.py bdist_wheel
 ```
 
 Tox is also setup in `tox.ini`. 

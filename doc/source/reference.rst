@@ -8,11 +8,13 @@ namespace plus those listed in the reference are public.
 
 
 .. automodsumm:: spires.interpolator
-    :template: instance_methods.rst
+   :template: instance_methods.rst
 
 .. automodsumm:: spires.invert
+   :template: instance_methods.rst
 
 .. automodsumm:: spires.process
+   :template: instance_methods.rst
 
 .. automodule:: spires.interpolator
    :members:

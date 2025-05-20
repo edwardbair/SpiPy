@@ -22,19 +22,17 @@ before_script:
   - python --version ; pip --version  # For debugging
   - conda create -y -n buildenv python=3.13
   - source activate buildenv
-  - conda install -c conda-forge nlopt swig gxx gcc make dask
+  - conda install -c conda-forge nlopt swig gxx gcc make 
   - pip install .
 
 test:
-  script:
-    - pip install ruff tox  # you can also use tox
+  script:    
     - pip install --editable ".[test]"
     - tox -e py3
 
 build:
   script:
-    - python setup.py build_ext --inplace --verbose
-    - mv build/ ../public/
+    - python setup.py build_ext --inplace --verbose    
 
   artifacts:
     paths:
@@ -42,7 +40,7 @@ build:
 
 docs:
   script:
-    - pip install sphinx sphinx_automodapi sphinx-rtd-theme myst_parser nbsphinx sphinx_markdown_tables pydata_sphinx_theme
+    - pip install --editable ".[docs]"    
     - cd doc
     - make html
     - mv build/html/ ../public/

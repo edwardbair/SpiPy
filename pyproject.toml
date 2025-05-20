@@ -1,7 +1,57 @@
 [build-system]
-requires = [
-    "setuptools>=42",
-    "wheel",
-    "numpy>=1.21.6",
+requires = ["setuptools>=61.0", "wheel", "numpy", "setuptools-scm"]
+build-backend = "setuptools.build_meta"
+
+
+[project]
+name = "spires"
+description = "spires python implementation"
+authors = [{ name = "Ned Bair", email = "edwardbair@ucsb.edu" }]
+readme = { file = "README.md", content-type = "text/markdown" }
+requires-python = ">=3.9" 
+dependencies = [
+    "numpy",
+    "h5py",
+    "scipy",
+    "rioxarray",
+    "netCDF4",
+    "scipy" # Only for legacy
 ]
-#build-backend = "setuptools.build_meta"
+dynamic = ["version"]  # This tells the backend to get version from setuptools_scm
+
+
+[project.urls]
+Homepage = "https://github.com/edwardbair/SpiPy"
+"Bug Tracker" = "https://github.com/edwardbair/SpiPy"
+
+
+[project.optional-dependencies]
+dev = [
+    "build",
+    "tox",
+    "setuptools-scm",
+    "matplotlib"
+]
+test = [
+    "tox",
+    "pytest"
+]
+docs = [
+    "sphinx",
+    "sphinx_automodapi",
+    "sphinx-rtd-theme",
+    "myst_parser",
+    "nbsphinx",
+    "sphinx_markdown_tables",
+    "pydata_sphinx_theme"
+]
+
+
+[tool.setuptools_scm]
+version_scheme = "post-release"
+local_scheme = "node-and-date"
+fallback_version = "0.0.1"
+
+
+[tool.setuptools.packages.find]
+exclude = ["tests*", "tests.*"]

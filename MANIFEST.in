@@ -1,5 +1,5 @@
-include versioneer.py
-include spires/_version.py
+prune tests
+prune examples
 include spires/spires.h
 include spires/spires.cpp
 include spires/numpy.i

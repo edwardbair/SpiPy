@@ -18,17 +18,24 @@ Use [Google Colab](https://colab.research.google.com/github/edwardbair/SpiPy/blo
 We are using git-LFS for the testing data.
 
 On macos:
+
 ```bash
+
 brew install git-lfs
+
+# or:
+sudo apt install vgit-lfs
 git lfs install
 ```
 
 ## Install
-We will need nlopt, gcc, g++/gxx and swig. E.g. with conda (from conda-forge) or apt
+We will need nlopt, gcc, g++/gxx and swig. E.g. with conda (from conda-forge).
 
 ```bash
 conda install -c conda-forge swig gxx gcc nlopt
 ```
+
+Note that currently, the c++ headers (nlopt.hpp) is not installed when installing with apt
 
 ```bash
 sudo apt install g++ gcc swig libnlopt-dev
@@ -42,7 +49,7 @@ pip3 install .
 To build the extension and create the swig bindings, run
 
 ```bash
-python3 setup.py build_ext --inplace
+python3 setup.py build_ext --inplace  
 ```
 
 
@@ -63,12 +70,10 @@ This is super odd. When using a pyenv virtual environment/system interpreter, th
 When using a conda environment, the wheel for 3.9 is created correctly.
 
 
-
 ### Create a source distribution:
 ```bash
 python setup.py sdist
 ```
-
 
 ## Usage
 the `examples/` folder contains some notebooks with use cases.
@@ -105,7 +110,6 @@ pip install pydata-sphinx-theme
 cd doc/
 make html
 ```
-
 
 
 ## Swig extensions
@@ -149,8 +153,8 @@ make
 
 #### Interpolator
 - [x] Baseline: RegularGridInterpolator with 4 dimensions. 1.07 ms
-- [x] One interpolator per band: There is no need to interpolate in band dimension rather than having a 4D interpolator (band, solar_angle, dust, grain_size), 9 3D interpolators inprove performance. 611 micro seconds.
-- [x] Vectorized interpolator call: While there is a performance gain for using the 9 invidiual interpolators, we have to call the interpolator 9 times. We get more performance improvements by keeping the 4D interpolator and call it once for all bands: 143 micro seconds
+- [x] One interpolator per band: There is no need to interpolate in band dimension rather than having a 4D interpolator (band, solar_angle, dust, grain_size), 9 3D interpolators improve performance. 611 micro seconds.
+- [x] Vectorized interpolator call: While there is a performance gain for using the 9 individual interpolators, we have to call the interpolator 9 times. We get more performance improvements by keeping the 4D interpolator and call it once for all bands: 143 micro seconds
 - [x] Swig individual: Moving the interpolator in C++ allows us to implement it as 9 3D interpolators without performance loss. If we call it 9 times for each band: 45.8 micro seconds.
 - [x] Swig vectorized: Call the same function once for all bands. 5.58  micro seconds
 - [x] Swig vectorized; index lookup in c+: 309 ns

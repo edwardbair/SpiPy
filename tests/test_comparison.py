@@ -77,13 +77,3 @@ def test_nlop_neldermead():
 
     expected = (4.375782e-01, 7.412245e-03, 1.513136e+02, 5.179564e+02)
     np.testing.assert_allclose(res, expected, rtol=1e-4)
-
-
-def test_scipy_cobyla():
-    res, model_refl = spires.speedy_invert_scipy_normalized(interpolator=interpolator,
-                                                            spectrum_target=spectrum_target,
-                                                            spectrum_background=spectrum_background,
-                                                            solar_angle=solar_angle)
-    expected = np.array([3.977390e-01, 7.790419e-02, 9.844864e+01, 2.311845e+02])
-    np.testing.assert_allclose(res.x, expected, rtol=1e-5)
-

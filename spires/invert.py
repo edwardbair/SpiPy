@@ -1,6 +1,7 @@
 import spires.interpolator
 import spires.core
 import numpy as np
+import scipy
 
 
 def speedy_invert(spectrum_target, spectrum_background, solar_angle, spectrum_shade=None,

@@ -3,7 +3,6 @@
 import numpy
 import setuptools
 from setuptools.command.build_py import build_py as _build_py
-import versioneer
 
 
 NLOP_LIB_DIRS = [
@@ -23,18 +22,18 @@ NLOP_INCLUDE_DIRS = [
     'include',                                     # local project includes
      ]
 
-
 INCLUDE_DIRS = NLOP_INCLUDE_DIRS + [numpy.get_include()]
 
-spires = setuptools.Extension(  name='spires._core',
-                                sources=['spires/spires.i', 'spires/spires.cpp'],
-                                swig_opts=['-c++'],
-                                extra_compile_args=['-std=c++11'],
-                                library_dirs=NLOP_LIB_DIRS,    
-                                include_dirs=INCLUDE_DIRS,     
-                                libraries=['nlopt'],
-                                language='c++'
-                                )
+spires = setuptools.Extension(  
+    name='spires._core',
+    sources=['spires/spires.i', 'spires/spires.cpp'],
+    swig_opts=['-c++'],
+    extra_compile_args=['-std=c++11'],
+    library_dirs=NLOP_LIB_DIRS,    
+    include_dirs=INCLUDE_DIRS,     
+    libraries=['nlopt'],
+    language='c++'
+    )
 
 
 class build_py(_build_py):
@@ -47,13 +46,9 @@ class build_py(_build_py):
         return super().run()
 
 
-version = versioneer.get_version()
-cmdclass = versioneer.get_cmdclass()
 
-
-setuptools.setup(
-    version=version,
-    cmdclass=cmdclass,
+setuptools.setup(        
+    packages=setuptools.find_packages(),
     ext_modules=[spires],
 )
 

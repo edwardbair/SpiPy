@@ -3,6 +3,10 @@
 import numpy
 import setuptools
 from setuptools.command.build_py import build_py as _build_py
+import os
+
+
+conda_prefix = os.environ.get("CONDA_PREFIX", "/usr")  # fallback if not in conda
 
 
 NLOP_LIB_DIRS = [
@@ -11,7 +15,8 @@ NLOP_LIB_DIRS = [
     #'/usr/local/Cellar/nlopt/2.7.1/lib',    # For x86
     '/usr/lib',                             # system library path
     '/usr/local/lib',                       # custom lib path
-    ]
+    os.path.join(conda_prefix, 'lib'),
+]
 
 NLOP_INCLUDE_DIRS = [
     '/opt/homebrew/include'
@@ -20,7 +25,8 @@ NLOP_INCLUDE_DIRS = [
     '/usr/include',                                # system includes (e.g. nlopt.hpp)
     '/usr/local/include',                          # custom install path
     'include',                                     # local project includes
-     ]
+    os.path.join(conda_prefix, 'include'),
+]
 
 INCLUDE_DIRS = NLOP_INCLUDE_DIRS + [numpy.get_include()]
 
@@ -33,7 +39,7 @@ spires = setuptools.Extension(
     include_dirs=INCLUDE_DIRS,     
     libraries=['nlopt'],
     language='c++'
-    )
+)
 
 
 class build_py(_build_py):
@@ -46,12 +52,7 @@ class build_py(_build_py):
         return super().run()
 
 
-
 setuptools.setup(        
     packages=setuptools.find_packages(),
     ext_modules=[spires],
 )
-
-
-
-

@@ -1,11 +1,6 @@
 import spires.interpolator
 import spires.core
 import numpy as np
-import scipy.interpolate
-
-algorithm_dict = {'COBYLA': 1,
-                  'NELDER_MEAD': 2,
-                  'SLSQP': 3}
 
 
 def speedy_invert(spectrum_target, spectrum_background, solar_angle, spectrum_shade=None,
@@ -16,7 +11,6 @@ def speedy_invert(spectrum_target, spectrum_background, solar_angle, spectrum_sh
 
     Parameters
     ----------
-
     spectrum_background: numpy.ndarray
         the background (R_0) spectrum
     spectrum_target: numpy.ndarray
@@ -219,9 +213,9 @@ def snow_diff_4(x, spectrum_target, spectrum_background, solar_angle, interpolat
     Calculates the difference between a spectrum modelled subject to x (x=[f_sca, f_shade, dust_concentration, grain_size)
     and the target spectrum.
 
-    model_reflectances = pur_snow_reflectance(solar_angle, dust_concentration, grain size) * f_sca
-                        + shade * f_shade
-                        + spectrum_background * (1 - f_sca - f_shade)
+    .. math::
+
+        model_reflectances = pure_snow_reflectance(solar_angle, dust_concentration, grain size) * f_sca + shade * f_shade + spectrum_background * (1 - f_sca - f_shade)
 
     Note:
     If f_sca is within 2 pct, use 3 variable solution. Error will be higher, but 4 parameter solution likely overfits.
@@ -282,9 +276,10 @@ def snow_diff_3(x, spectrum_target, solar_angle, interpolator, shade):
     Calculates the difference between a spectrum modelled subject to x (x=[f_sca, f_shade, dust_concentration, grain_size)
     and the target spectrum.
 
-    model_reflectances = pur_snow_reflectance(solar_angle, dust_concentration, grain size) * f_sca
-                        + shade * (1-f_sca)
+    .. math::
 
+        model_reflectances = pure_snow_reflectance(solar_angle, dust_concentration, grain size) * f_sca + shade * (1-f_sca)
+                            
     Note:
     If f_sca is within 2 pct, use 3 variable solution. Error will be higher, but 4 parameter solution likely overfits.
 
@@ -345,7 +340,6 @@ def speedy_invert_scipy(interpolator: spires.interpolator.LutInterpolator, spect
 
     Parameters
     ------------
-
     interpolator: spires.interpolator.LutInterpolator
         an object that
         a) has attributes `bands`, `solar_angle`, `dust_concentration`, `grain_size` that hold the coordinates
@@ -459,6 +453,7 @@ def index_to_value(index, coords):
 
     Returns
     -------
+    value
 
     """
     idx = index * coords.size
@@ -469,63 +464,3 @@ def index_to_value(index, coords):
     return coords[l_idx] + dist * diff
 
 
-def speedy_invert_scipy_normalized(interpolator: spires.interpolator.LutInterpolator,
-                                   spectrum_target, spectrum_background, solar_angle, spectrum_shade=None,
-                                   method='COBYLA'):
-    """
-    Perform speedy invert with COBYLA solver. The scipy COBYLA solver does not allow us to specify
-    initial steps (rhobeg) for each parameter separately. We therefore need to scale the problem,
-    i.e. for the solver, all parameters are on a scale of 0-1.
-
-    Parameters
-    ----------
-    method: str
-        the scipy solver method
-    spectrum_shade: np.ndarray
-        the shade spectrum
-    interpolator: spires.interpolator.LutInterpolator
-        A lut interpolator
-    spectrum_target: np.ndarray
-        the spectrum target
-    spectrum_background: np.ndarray
-        the background spectrum
-    solar_angle: float
-        the solar angle of the spectrum target
-
-    Returns
-    -------
-
-    """
-    if spectrum_shade is None:
-        spectrum_shade = np.zeros_like(spectrum_target)
-
-    scipy_options = {'disp': False, 'rhobeg': 0.05, 'maxiter': 100, 'tol': 1e-4}
-
-    bounds_fsca = [0, 1]
-    bounds_fshade = [0, 1]
-    bounds_dust = [0, 1]
-    bounds_grain = [0, 1]
-    bounds = np.array([bounds_fsca, bounds_fshade, bounds_dust, bounds_grain], dtype=float)
-    x0 = np.array([0.5, 0.05, 0.01, 0.1])
-
-    res = scipy.optimize.minimize(spires.core.spectrum_difference_scaled,
-                                  x0,
-                                  method=method,
-                                  options=scipy_options,
-                                  bounds=bounds,
-                                  args=(spectrum_background,
-                                        spectrum_target,
-                                        spectrum_shade,
-                                        solar_angle,
-                                        interpolator.bands,
-                                        interpolator.solar_angles,
-                                        interpolator.dust_concentrations,
-                                        interpolator.grain_sizes,
-                                        interpolator.reflectances)
-                                  )
-
-    res.x[2] = index_to_value(res.x[2], interpolator.dust_concentrations)
-    res.x[3] = index_to_value(res.x[3], interpolator.grain_sizes)
-
-    model_refl = interpolator.interpolate_all(solar_angle=solar_angle, dust_concentration=res.x[2], grain_size=res.x[3])
-    return res, model_refl

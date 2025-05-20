@@ -11,13 +11,7 @@ Welcome to SpiPy's documentation!
    :caption: Contents:
 
    Readme <README.md>
-   reference
-
-
-
-
-
-
+   Reference <reference>
 
 
 Indices and tables

@@ -28,6 +28,7 @@ extensions = ['sphinx.ext.autodoc',
               'sphinx_markdown_tables'
               ]
 
+
 templates_path = ['_templates']
 exclude_patterns = []
 

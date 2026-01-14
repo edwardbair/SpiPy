@@ -13,7 +13,7 @@ dependencies = [
     "numpy",
     "h5py",
     "scipy",
-    "rioxarray",
+    "xarray",
     "netCDF4",
     "scipy" # Only for legacy
 ]

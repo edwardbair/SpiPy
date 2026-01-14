@@ -2,6 +2,7 @@ import numpy as np
 import netCDF4
 import spires.core
 import scipy
+import xarray
 
 
 def get_index(coordinates: np.array, value: float) -> float:
@@ -158,6 +159,16 @@ class LutInterpolator:
             self.dust_concentrations = np.squeeze(lut_nc['#refs#']['e'][:])
             self.solar_angles = np.squeeze(lut_nc['#refs#']['f'][:])
             self.bands = np.squeeze(lut_nc['#refs#']['g'][:])
+
+    def to_xarray(self):
+        da = xarray.DataArray(self.reflectances, 
+                              name='reflectances',
+                              dims=['band', 'solar_angle', 'dust_concentration', 'grain_size'],               
+                              coords={'band': self.bands, 
+                                      'solar_angle': self.solar_angles, 
+                                      'dust_concentration': self.dust_concentrations, 
+                                      'grain_size': self.grain_sizes})
+        return da
 
     def make_scipy_interpolator(self):
         """

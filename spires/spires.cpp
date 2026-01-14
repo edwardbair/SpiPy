@@ -430,7 +430,17 @@ struct ObjectiveData{
 double constraint(const std::vector<double> &x, std::vector<double> &grad, void *data) {
     // f_sca + f_shade <= 1
     return x[0] + x[1] - 1;
-}
+};
+
+
+double spectrum_has_nan(double* spectrum_target, int len_target) {
+    for (int n = 0; n <= len_target; n++) {
+        if (std::isnan(spectrum_target[n])) {
+            return true;
+        }
+    }
+    return false;
+};
 
 
 
@@ -447,7 +457,13 @@ std::vector<double> invert(double* spectrum_background, int len_background,
                            std::vector<double> x0,
                            int algorithm) {
 
-    //std::cout << "Starting" << std::endl;                
+    //std::cout << "Starting" << std::endl;      
+    
+    // TODO: do not invert if there is a NaN in the target
+    if (spectrum_has_nan(spectrum_target, len_target)) {
+        std::vector<double> x(4, std::nan(""));
+        return x;
+    }
     
     ObjectiveData obj_data;
     obj_data.spectrum_background = spectrum_background;
@@ -476,9 +492,6 @@ std::vector<double> invert(double* spectrum_background, int len_background,
 
     bool constrained_algorithm;
     nlopt::opt opt;
-
-
-
 
     if (algorithm==1) {
         opt = nlopt::opt(nlopt::LN_COBYLA, 4);
@@ -532,7 +545,7 @@ std::vector<double> invert(double* spectrum_background, int len_background,
         */
     }
 
-    if (constrained_algorithm ) {
+    if ( constrained_algorithm ) {
         // Add the constraint function
         opt.add_inequality_constraint(constraint, &obj_data);
         constrained_algorithm = true;
@@ -642,7 +655,6 @@ std::vector<double> invert_scaled(double* spectrum_background, int len_backgroun
     std::vector<double> x = x0;
     nlopt::result result = opt.optimize(x, minf);
 
-
     return x;
 }
 
@@ -694,7 +706,6 @@ void invert_array1d(double* spectra_backgrounds, int n_obs_backgrounds, int n_ba
 
 
 
-
 void invert_array2d(double* spectra_backgrounds, int n_background_y, int n_background_x, int n_bands_backgrounds,
                     double* spectra_targets, int n_target_y, int n_target_x, int n_bands_target,
                     double* spectrum_shade, int len_shade,
@@ -714,13 +725,14 @@ void invert_array2d(double* spectra_backgrounds, int n_background_y, int n_backg
 
     for (size_t y = 0; y < n_target_y; y++) {
         for (size_t x = 0; x < n_target_x; x++) {
+            // obs # of pixel/observation
             int obs = (x + y * n_target_x);
 
             //std::cout << obs << std::endl;
             int n = obs * n_bands_target;
 
-            double* spectrum_background = &spectra_backgrounds[n];
             double* spectrum_target = &spectra_targets[n];
+            double* spectrum_background = &spectra_backgrounds[n];
             double solar_angle = obs_solar_angles[obs];
 
             std::vector<double> result = invert(spectrum_background, len_bands,

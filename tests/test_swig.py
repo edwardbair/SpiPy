@@ -90,7 +90,7 @@ def test_invert_array():
                                solar_angles=interpolator.solar_angles,
                                dust_concentrations=interpolator.dust_concentrations,
                                grain_sizes=interpolator.grain_sizes,
-                               lut=interpolator.reflectances,
+                               reflectances=interpolator.reflectances,
                                results=results,
                                max_eval=100,
                                x0=x0,

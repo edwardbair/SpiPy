@@ -102,11 +102,11 @@ def speedy_invert_array1d(spectra_targets, spectra_backgrounds, obs_solar_angles
         Initial guess. x0[0]: fsca, x0[1]: fshade, x0[2]: dust_conc, x0[3]: grain_size
     spectra_targets: numpy.ndarray
         a 2d array holding the mixed spectrum to invert
-            - dim1: locations/observations (e.g. flattend space). Must be same length as `spectra_background`
+            - dim1: locations/observations (e.g. flattened space). Must be same length as `spectra_background`
             - dim2: bands. Has to have same order as `spectra_background` and `bands`
     spectra_backgrounds: numpy.ndarray
         a 2D array holding the background (R_0) spectra.
-            - dim1: locations/observations (e.g. flattend space). Must be same length as `spectra_target`
+            - dim1: locations/observations (e.g. flattened space). Must be same length as `spectra_target`
             - dim2: bands
     spectrum_shade: numpy.ndarray
         an array holding the shaded spectrum
@@ -175,17 +175,27 @@ def speedy_invert_array1d(spectra_targets, spectra_backgrounds, obs_solar_angles
     return results
 
 
-def speedy_invert_array2d(spectra_targets, spectra_backgrounds, obs_solar_angles, spectrum_shade=None,
-                          bands=None, solar_angles=None, dust_concentrations=None, grain_sizes=None, reflectances=None,
-                          interpolator=None, lut_dataarray=None, max_eval=100,
-                          x0=np.array([0.5, 0.05, 10, 250]), algorithm=2):
+def speedy_invert_array2d(spectra_targets, spectra_backgrounds, obs_solar_angles, max_eval=100, x0=np.array([0.5, 0.05, 10, 250]), algorithm=2,
+                          bands=None, solar_angles=None, dust_concentrations=None, grain_sizes=None, reflectances=None, interpolator=None):
+    """
+    Parameters
+    -----------
+    spectra_targets: numpy.ndarray
+        a 3d array holding the mixed spectrum to invert
+            - dim1: y. Must be same length as y of `spectra_background`
+            - dim2: x. Must be same length as x of `spectra_background`
+            - dim3: bands. Has to have same order as bands of `spectra_background` 
+    spectra_backgrounds: numpy.ndarray
+        a 3D array holding the background (R_0) spectra.
+            - dim1: y: Must be same length as y of `spectra_target`
+            - dim1: x: Must be same length as y of `spectra_target`
+            - dim3: bands. Has to have same order as bands of `spectra_target`
+    """
     
-    spectra_targets = spectra_targets.transpose('y', 'x', 'band')
-    spectra_backgrounds = spectra_backgrounds.transpose('y', 'x', 'band')
-    obs_solar_angles = obs_solar_angles.transpose('y', 'x')
+    spectrum_shade = np.zeros(spectra_targets.shape[-1], dtype=np.double)
     
     if spectrum_shade is None:
-        spectrum_shade = np.zeros(spectra_targets.band.size, dtype=np.double)
+        spectrum_shade = np.zeros_like(spectra_targets[0])
 
     if interpolator is not None:
         bands = interpolator.bands
@@ -194,7 +204,8 @@ def speedy_invert_array2d(spectra_targets, spectra_backgrounds, obs_solar_angles
         grain_sizes = interpolator.grain_sizes
         reflectances = interpolator.reflectances
 
-    results = np.empty((spectra_targets.y.size, spectra_targets.x.size, 4), dtype=np.double)
+    results = np.empty((spectra_targets.shape[0], spectra_targets.shape[1], 4), dtype=np.double)
+
 
     spires.core.invert_array2d(spectra_backgrounds=spectra_backgrounds,
                                spectra_targets=spectra_targets,
@@ -206,6 +217,54 @@ def speedy_invert_array2d(spectra_targets, spectra_backgrounds, obs_solar_angles
                                max_eval=max_eval,
                                x0=x0,
                                algorithm=algorithm)
+    return results
+
+
+
+def speedy_invert_xarray(spectra_targets, spectra_backgrounds, obs_solar_angles, lut_dataarray,
+                          spectrum_shade=None, max_eval=100,
+                          x0=np.array([0.5, 0.05, 10, 250]), algorithm=2):
+    """
+    2D inversion. 
+
+    Parameters
+    ------------
+    spectra_targets: xarray.DataArray with dimensions: y,x,band
+    spectra_backgrounds: xarray.DataArray with dimensions: y,x,band
+    obs_solar_angles: xarray.DataArray with dimensions: y,x
+    lut_dataarray: xarray.DataArray with dimensions: band, solar_angle, dust_concentration, grain_size
+    """
+    
+    spectra_targets = spectra_targets.transpose('y', 'x', 'band')
+    spectra_backgrounds = spectra_backgrounds.transpose('y', 'x', 'band')
+    obs_solar_angles = obs_solar_angles.transpose('y', 'x')
+    
+    if spectrum_shade is None:
+        spectrum_shade = np.zeros(spectra_targets.band.size, dtype=np.double)
+   
+    bands = lut_dataarray.band
+    solar_angles = lut_dataarray.solar_angle
+    dust_concentrations = lut_dataarray.dust_concentration
+    grain_sizes = lut_dataarray.grain_size
+    reflectances = lut_dataarray.transpose('band', 'solar_angle', 'dust_concentration', 'grain_size').values
+
+    results = np.empty((spectra_targets.y.size, spectra_targets.x.size, 4), dtype=np.double)
+
+    spires.core.invert_array2d(spectra_backgrounds=spectra_backgrounds,
+                               spectra_targets=spectra_targets,
+                               spectrum_shade=spectrum_shade,
+                               obs_solar_angles=obs_solar_angles,
+                               bands=bands, 
+                               solar_angles=solar_angles, 
+                               dust_concentrations=dust_concentrations,
+                               grain_sizes=grain_sizes, 
+                               reflectances=reflectances,
+                               results=results,
+                               max_eval=max_eval,
+                               x0=x0,
+                               algorithm=algorithm)
+    
+    # TODO: bootstrap the returned xarray!
     return results
 
 

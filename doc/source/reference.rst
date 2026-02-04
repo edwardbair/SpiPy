@@ -16,6 +16,12 @@ namespace plus those listed in the reference are public.
 .. automodsumm:: spires.process
    :template: instance_methods.rst
 
+.. automodsumm:: spires.utol
+   :template: instance_methods.rst
+
+.. automodsumm:: spires.legacy
+   :template: instance_methods.rst
+
 .. automodule:: spires.interpolator
    :members:
    :undoc-members:
@@ -27,6 +33,16 @@ namespace plus those listed in the reference are public.
    :show-inheritance:
 
 .. automodule:: spires.process
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+.. automodule:: spires.utol
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+.. automodule:: spires.legacy
    :members:
    :undoc-members:
    :show-inheritance:

@@ -11,6 +11,8 @@ Welcome to SpiPy's documentation!
    :caption: Contents:
 
    Readme <README.md>
+   Getting Started <getting_started.md>
+   Examples <examples.md>
    Reference <reference>
 
 

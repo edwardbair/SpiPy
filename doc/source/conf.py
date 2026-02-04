@@ -47,5 +47,8 @@ autosummary_generate = True# ['spires.interpolate']
 #numpydoc_show_class_members = False
 #add_module_names = False
 
+# Suppress warnings for missing cross-references to files outside doc tree
+suppress_warnings = ['myst.xref_missing']
+
 
 

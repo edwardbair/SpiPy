@@ -23,11 +23,7 @@ def speedy_invert(f, spectrum_target, spectrum_background,
     Parameters
     ----------
     f: scipy.interpolate.RegularGridInterpolator
-        a gridded RT/Mie interpolator with dimensions and coordinates:
-            - band# e.g. (1-7)
-            - solar zenith angle e.g. (0-90 deg)
-            - dust e.g. (0-1000 ppm)
-            - grain radius e.g (30-1200 um)
+        A gridded RT/Mie interpolator with bands, solar angles, dust, and grain sizes.
     spectrum_target: np.ndarray
         The target spectrum (i.e. the observation) to be inverted
     spectrum_background: np.ndarray
@@ -38,9 +34,9 @@ def speedy_invert(f, spectrum_target, spectrum_background,
     shade: np.ndarray
         ideal shade endmember
     mode: int
-        3 or 4 variable inversion.
-        - 4 variable solution (1-fsca, 2-fshade, fother(1-fsca-fshade),3-grain radius,4-dust)
-        - 3 variable solution (1-fsca, fshade (1-fsca), 2-grain radius, 3-dust)
+        3 or 4 variable inversion. 4 = full model (1-fsca, 2-fshade,
+        fother(1-fsca-fshade), 3-grain radius, 4-dust).
+        3 = simplified model (1-fsca, fshade (1-fsca), 2-grain radius, 3-dust).
     scipy_options: dict
         Dictionary of options to pass to scipy.optimize.minimize()
         (https://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.minimize.html
@@ -50,12 +46,9 @@ def speedy_invert(f, spectrum_target, spectrum_background,
     Returns
     -------
     res: scipy.optimize.OptimizeResult
-        see [scipy.optimize.OptimizeResult](https://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.OptimizeResult.html#scipy.optimize.OptimizeResult)
-        res.x contains the solution of the optimization problem, with
-            - x[0]: f_sca
-            - x[1]: f_shade
-            - x[2]: dust_concentration
-            - x[3]: grain_size
+        see scipy.optimize.OptimizeResult documentation.
+        res.x contains the solution of the optimization problem with
+        x[0]=f_sca, x[1]=f_shade, x[2]=dust_concentration, x[3]=grain_size.
     model_ref: numpy.array
         the optimized modelled reflectance
 

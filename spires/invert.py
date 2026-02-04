@@ -8,54 +8,60 @@ def speedy_invert(spectrum_target, spectrum_background, solar_angle, spectrum_sh
                   bands=None, solar_angles=None, dust_concentrations=None, grain_sizes=None, reflectances=None,
                   interpolator=None, lut_dataarray=None, max_eval=100, x0=np.array([0.5, 0.05, 10, 250]), algorithm=2):
     """
-    Inverts the snow reflectance spectrum. Optimization is performed using Nlopt's LN_COBYLA algorithm.
+    Inverts the snow reflectance spectrum using nonlinear optimization.
 
     Parameters
     ----------
-    spectrum_background: numpy.ndarray
-        the background (R_0) spectrum
-    spectrum_target: numpy.ndarray
-        the mixed spectrum to invert. Has to be same length as `spectrum_background`.
-        Has to have same band order as `spectrum_background` and `bands`
-    spectrum_shade: numpy.ndarray
-        the idea; shaded spectrum. Has to be same length as `spectrum_target`
-    solar_angle: float
-        the solar angle of the spectrum target
-    bands: numpy.ndarray
-        band coordinates of reflectances
-    solar_angles: numpy.ndarray
-        solar angles of reflectances
-    dust_concentrations: numpy.ndarray
-        dust concentrations of reflectances
-    grain_sizes: numpy.ndarray
-        grain sizes of reflectances.
-    reflectances: numpy.ndarray
-        4D Snow reflectance lookup table with coordinates bands, solar_angles, dust_concentrations and grain_sizes.
-    interpolator: spires.interpolator.LutInterpolator
-        specify the interpolator instead of bands, solar_angles, dust_concentrations and grain_sizes.
-    lut_dataarray: xarray.DataArray
-        specify the lut_dataarray instead of bands, solar_angles, dust_concentrations and grain_sizes.
-    algorithm: int
-        Algorithm to use for inverting the snow reflectance spectrum.
-        1: LN_COBYLA
-        2: LN_NELDERMEAD
-        3: LD_SLSQP
-    x0: array-like
-        Initial guess. x0[0]: fsca, x0[1]: fshade, x[2]: dust_conc, x[3]: grain_size
-    max_eval: int
-        maximum number of iterations
+    spectrum_target : numpy.ndarray
+        The mixed spectrum to invert. Must be same length as `spectrum_background`.
+        Must have same band order as `spectrum_background` and `bands`.
+    spectrum_background : numpy.ndarray
+        The background (snow-free, R_0) spectrum.
+    solar_angle : float
+        The solar zenith angle of the spectrum target (degrees).
+    spectrum_shade : numpy.ndarray, optional
+        The ideal shaded spectrum. Must be same length as `spectrum_target`.
+        If None, uses zeros (default: None).
+    bands : numpy.ndarray, optional
+        Band wavelength coordinates of reflectances. Required if interpolator not provided.
+    solar_angles : numpy.ndarray, optional
+        Solar angle coordinates of reflectances. Required if interpolator not provided.
+    dust_concentrations : numpy.ndarray, optional
+        Dust concentration coordinates of reflectances (ppm). Required if interpolator not provided.
+    grain_sizes : numpy.ndarray, optional
+        Grain size coordinates of reflectances (μm). Required if interpolator not provided.
+    reflectances : numpy.ndarray, optional
+        4D snow reflectance lookup table with dimensions (bands, solar_angles,
+        dust_concentrations, grain_sizes). Required if interpolator not provided.
+    interpolator : spires.interpolator.LutInterpolator, optional
+        Pre-configured interpolator. If provided, overrides individual LUT parameters.
+    lut_dataarray : xarray.DataArray, optional
+        Not currently used. Reserved for future xarray support.
+    max_eval : int, optional
+        Maximum number of optimization iterations. Default is 100.
+    x0 : array-like, optional
+        Initial guess for [fsca, fshade, dust_conc, grain_size].
+        Default is [0.5, 0.05, 10, 250].
+    algorithm : int, optional
+        Optimization algorithm to use (default: 2).
+        1 = LN_COBYLA (Constrained Optimization BY Linear Approximations),
+        2 = LN_NELDERMEAD (Nelder-Mead simplex),
+        3 = LD_SLSQP (Sequential Least Squares Programming, not working in C++).
 
     Returns
-    --------
-    x: numpy.ndarray
-        x[0]: f_sca
-        x[1]: f_shade
-        x[2]: dust_concentration
-        x[3]: grain_size
+    -------
+    tuple
+        Optimization results as (fsca, fshade, dust_concentration, grain_size) where:
+
+        - fsca : float - Fractional snow-covered area (0-1)
+        - fshade : float - Fractional shaded area (0-1)
+        - dust_concentration : float - Dust concentration in snow (ppm)
+        - grain_size : float - Effective snow grain radius (μm)
 
     Examples
-    ---------
+    --------
     >>> import spires
+    >>> import numpy as np
     >>> spectrum_target = np.array([0.3424,0.366,0.3624,0.38932347,0.41624767,0.39567757,0.07043362,0.06267947, 0.3792])
     >>> spectrum_background = np.array([0.0182,0.0265,0.0283,0.056067,0.095432,0.12036866,0.12491679,0.07888655,0.1406])
     >>> solar_angle = 55.73733298
@@ -87,60 +93,64 @@ def speedy_invert_array1d(spectra_targets, spectra_backgrounds, obs_solar_angles
                           interpolator=None, lut_dataarray=None, max_eval=100,
                           x0=np.array([0.5, 0.05, 10, 250]), algorithm=2):
     """
-    Inverts the snow reflectance spectrum for an array of spectrum backgrounds, spectrum targets, and solar angles
+    Batch inversion of snow reflectance spectra for 1D arrays of observations.
+
+    Efficiently processes multiple pixels/observations sequentially using optimized
+    C++ implementations for improved performance.
 
     Parameters
     ----------
-    max_eval: int
-        maximum number of iterations
-    algorithm: int
-        Algorithm to use for inverting the snow reflectance spectrum.
-        1: LN_COBYLA
-        2: LN_NELDERMEAD
-        3: LD_SLSQP
-    x0: array-like
-        Initial guess. x0[0]: fsca, x0[1]: fshade, x0[2]: dust_conc, x0[3]: grain_size
-    spectra_targets: numpy.ndarray
-        a 2d array holding the mixed spectrum to invert
-            - dim1: locations/observations (e.g. flattened space). Must be same length as `spectra_background`
-            - dim2: bands. Has to have same order as `spectra_background` and `bands`
-    spectra_backgrounds: numpy.ndarray
-        a 2D array holding the background (R_0) spectra.
-            - dim1: locations/observations (e.g. flattened space). Must be same length as `spectra_target`
-            - dim2: bands
-    spectrum_shade: numpy.ndarray
-        an array holding the shaded spectrum
-    obs_solar_angles: numpy.ndarray
-        the solar angles of spectrum targets. Must be of same length as spectra_background.
-    bands: numpy.ndarray
-        band coordinates of reflectances
-    solar_angles: numpy.ndarray
-        solar angle coordinates of reflectances
-    dust_concentrations: numpy.ndarray
-        dust concentration coordinates of reflectances
-    grain_sizes: numpy.ndarray
-        grain size coordinates of reflectances.
-    reflectances: numpy.ndarray
-        4D Snow reflectance lookup table with coordinates bands, solar_angles, dust_concentrations and grain_sizes.
-    interpolator: spires.LutInterpolator
-        specify the interpolator instead of bands, solar_angles, dust_concentrations and grain_sizes.
-    lut_dataarray: xarray.DataArray
-        specify the lut_dataarray instead of bands, solar_angles, dust_concentrations and grain_sizes.
+    spectra_targets : numpy.ndarray
+        2D array of mixed spectra to invert with shape (n_observations, n_bands).
+        Must have same length as `spectra_backgrounds` along first dimension.
+    spectra_backgrounds : numpy.ndarray
+        2D array of background (snow-free, R_0) spectra with shape (n_observations, n_bands).
+        Must have same length as `spectra_targets` along first dimension.
+    obs_solar_angles : numpy.ndarray
+        1D array of solar zenith angles (degrees) for each observation.
+        Must have same length as first dimension of `spectra_targets`.
+    spectrum_shade : numpy.ndarray, optional
+        1D array representing the ideal shaded spectrum for all observations.
+        Must have same length as number of bands. If None, uses zeros (default: None).
+    bands : numpy.ndarray, optional
+        Band wavelength coordinates of reflectances. Required if interpolator not provided.
+    solar_angles : numpy.ndarray, optional
+        Solar angle coordinates of reflectances. Required if interpolator not provided.
+    dust_concentrations : numpy.ndarray, optional
+        Dust concentration coordinates of reflectances (ppm). Required if interpolator not provided.
+    grain_sizes : numpy.ndarray, optional
+        Grain size coordinates of reflectances (μm). Required if interpolator not provided.
+    reflectances : numpy.ndarray, optional
+        4D snow reflectance lookup table with dimensions (bands, solar_angles,
+        dust_concentrations, grain_sizes). Required if interpolator not provided.
+    interpolator : spires.interpolator.LutInterpolator, optional
+        Pre-configured interpolator. If provided, overrides individual LUT parameters.
+    lut_dataarray : xarray.DataArray, optional
+        Not currently used. Reserved for future xarray support.
+    max_eval : int, optional
+        Maximum number of optimization iterations per observation (default: 100).
+    x0 : array-like, optional
+        Initial guess for [fsca, fshade, dust_conc, grain_size].
+        Default is [0.5, 0.05, 10, 250].
+    algorithm : int, optional
+        Optimization algorithm to use (default: 2).
+        1 = LN_COBYLA (Constrained Optimization BY Linear Approximations),
+        2 = LN_NELDERMEAD (Nelder-Mead simplex),
+        3 = LD_SLSQP (Sequential Least Squares Programming, not working in C++).
 
     Returns
     -------
-    results: numpy.ndarray
-        2D array with
-            - dim1: locations/observations and
-            - dim2: 4.
-                - results[:, 0] = f_sca
-                - results[:, 1] = f_shade
-                - results[:, 2] = dust_concentration
-                - results[:, 3] = grain_size
+    numpy.ndarray
+        2D array of shape (n_observations, 4) containing inversion results:
+        - results[:, 0] : Fractional snow-covered area (0-1)
+        - results[:, 1] : Fractional shaded area (0-1)
+        - results[:, 2] : Dust concentration in snow (ppm)
+        - results[:, 3] : Effective snow grain radius (μm)
 
     Examples
-    ----------
+    --------
     >>> import spires
+    >>> import numpy as np
     >>> spectra_targets = np.array([[0.3424,0.366,0.3624,0.38932347,0.41624767,0.39567757,0.0704336,0.06267947,0.3792],
     ...                            [0.2866,0.3046,0.324,0.34468558,0.35373732,0.35651454,0.1807259,0.16601688,0.3488]])
     >>> spectra_backgrounds = np.array([[0.0182,0.0265,0.0283,0.0560674,0.0954323,0.1203686,0.1249167,0.0788865,0.1406],
@@ -151,7 +161,6 @@ def speedy_invert_array1d(spectra_targets, spectra_backgrounds, obs_solar_angles
     ...                            obs_solar_angles=obs_solar_angles, interpolator=interpolator, algorithm=1)
     array([[4.06627881e-01, 1.45134251e-01, 1.37503982e+02, 3.61158500e+02],
            [2.63873228e-01, 1.83226478e-01, 1.94343159e+02, 3.80170927e+02]])
-
     """
     if spectrum_shade is None:
         spectrum_shade = np.zeros_like(spectra_targets[0])
@@ -178,18 +187,63 @@ def speedy_invert_array1d(spectra_targets, spectra_backgrounds, obs_solar_angles
 def speedy_invert_array2d(spectra_targets, spectra_backgrounds, obs_solar_angles, max_eval=100, x0=np.array([0.5, 0.05, 10, 250]), algorithm=2,
                           bands=None, solar_angles=None, dust_concentrations=None, grain_sizes=None, reflectances=None, interpolator=None):
     """
+    Batch inversion of snow reflectance spectra for 2D spatial arrays.
+
+    Processes entire images or 2D grids of observations efficiently using optimized
+    C++ implementations. Ideal for processing satellite imagery or gridded data.
+
     Parameters
-    -----------
-    spectra_targets: numpy.ndarray
-        a 3d array holding the mixed spectrum to invert
-            - dim1: y. Must be same length as y of `spectra_background`
-            - dim2: x. Must be same length as x of `spectra_background`
-            - dim3: bands. Has to have same order as bands of `spectra_background` 
-    spectra_backgrounds: numpy.ndarray
-        a 3D array holding the background (R_0) spectra.
-            - dim1: y: Must be same length as y of `spectra_target`
-            - dim1: x: Must be same length as y of `spectra_target`
-            - dim3: bands. Has to have same order as bands of `spectra_target`
+    ----------
+    spectra_targets : numpy.ndarray
+        3D array of mixed spectra to invert with shape (ny, nx, n_bands):
+        - dim 0: y spatial dimension
+        - dim 1: x spatial dimension
+        - dim 2: spectral bands (must match order of `spectra_backgrounds`)
+    spectra_backgrounds : numpy.ndarray
+        3D array of background (snow-free, R_0) spectra with shape (ny, nx, n_bands):
+        - dim 0: y spatial dimension (must match `spectra_targets`)
+        - dim 1: x spatial dimension (must match `spectra_targets`)
+        - dim 2: spectral bands (must match order of `spectra_targets`)
+    obs_solar_angles : numpy.ndarray
+        2D array of solar zenith angles (degrees) with shape (ny, nx).
+        One angle per spatial location.
+    max_eval : int, optional
+        Maximum number of optimization iterations per pixel (default: 100).
+    x0 : array-like, optional
+        Initial guess for [fsca, fshade, dust_conc, grain_size].
+        Default is [0.5, 0.05, 10, 250].
+    algorithm : int, optional
+        Optimization algorithm to use (default: 2).
+        1 = LN_COBYLA (Constrained Optimization BY Linear Approximations),
+        2 = LN_NELDERMEAD (Nelder-Mead simplex),
+        3 = LD_SLSQP (Sequential Least Squares Programming, not working in C++).
+    bands : numpy.ndarray, optional
+        Band wavelength coordinates of reflectances. Required if interpolator not provided.
+    solar_angles : numpy.ndarray, optional
+        Solar angle coordinates of reflectances. Required if interpolator not provided.
+    dust_concentrations : numpy.ndarray, optional
+        Dust concentration coordinates of reflectances (ppm). Required if interpolator not provided.
+    grain_sizes : numpy.ndarray, optional
+        Grain size coordinates of reflectances (μm). Required if interpolator not provided.
+    reflectances : numpy.ndarray, optional
+        4D snow reflectance lookup table with dimensions (bands, solar_angles,
+        dust_concentrations, grain_sizes). Required if interpolator not provided.
+    interpolator : spires.interpolator.LutInterpolator, optional
+        Pre-configured interpolator. If provided, overrides individual LUT parameters.
+
+    Returns
+    -------
+    numpy.ndarray
+        3D array of shape (ny, nx, 4) containing inversion results:
+        - results[:, :, 0] : Fractional snow-covered area (0-1)
+        - results[:, :, 1] : Fractional shaded area (0-1)
+        - results[:, :, 2] : Dust concentration in snow (ppm)
+        - results[:, :, 3] : Effective snow grain radius (μm)
+
+    Notes
+    -----
+    The shade spectrum is automatically set to zeros for all pixels. Future versions
+    may support spatially-varying shade spectra.
     """
     
     spectrum_shade = np.zeros(spectra_targets.shape[-1], dtype=np.double)
@@ -225,14 +279,52 @@ def speedy_invert_xarray(spectra_targets, spectra_backgrounds, obs_solar_angles,
                           spectrum_shade=None, max_eval=100,
                           x0=np.array([0.5, 0.05, 10, 250]), algorithm=2):
     """
-    2D inversion. 
+    Batch inversion of snow reflectance spectra using xarray DataArrays.
+
+    Provides a high-level interface for processing geospatial data with coordinate
+    information preserved. Automatically handles dimension ordering and metadata.
 
     Parameters
-    ------------
-    spectra_targets: xarray.DataArray with dimensions: y,x,band
-    spectra_backgrounds: xarray.DataArray with dimensions: y,x,band
-    obs_solar_angles: xarray.DataArray with dimensions: y,x
-    lut_dataarray: xarray.DataArray with dimensions: band, solar_angle, dust_concentration, grain_size
+    ----------
+    spectra_targets : xarray.DataArray
+        Mixed spectra to invert with dimensions (y, x, band).
+        Will be automatically transposed if needed.
+    spectra_backgrounds : xarray.DataArray
+        Background (snow-free, R_0) spectra with dimensions (y, x, band).
+        Must have same spatial dimensions as `spectra_targets`.
+    obs_solar_angles : xarray.DataArray
+        Solar zenith angles (degrees) with dimensions (y, x).
+        One angle per spatial location.
+    lut_dataarray : xarray.DataArray
+        Lookup table with dimensions (band, solar_angle, dust_concentration, grain_size).
+        Coordinates are extracted and used for interpolation.
+    spectrum_shade : numpy.ndarray, optional
+        1D array representing the ideal shaded spectrum.
+        Must have same length as number of bands. If None, uses zeros (default: None).
+    max_eval : int, optional
+        Maximum number of optimization iterations per pixel (default: 100).
+    x0 : array-like, optional
+        Initial guess for [fsca, fshade, dust_conc, grain_size].
+        Default is [0.5, 0.05, 10, 250].
+    algorithm : int, optional
+        Optimization algorithm to use (default: 2).
+        1 = LN_COBYLA (Constrained Optimization BY Linear Approximations),
+        2 = LN_NELDERMEAD (Nelder-Mead simplex),
+        3 = LD_SLSQP (Sequential Least Squares Programming, not working in C++).
+
+    Returns
+    -------
+    numpy.ndarray
+        3D array of shape (ny, nx, 4) containing inversion results:
+        - results[:, :, 0] : Fractional snow-covered area (0-1)
+        - results[:, :, 1] : Fractional shaded area (0-1)
+        - results[:, :, 2] : Dust concentration in snow (ppm)
+        - results[:, :, 3] : Effective snow grain radius (μm)
+
+    Notes
+    -----
+    Currently returns a numpy array. Future versions will return an xarray.DataArray
+    with appropriate coordinates and metadata (see TODO comment in code).
     """
     
     spectra_targets = spectra_targets.transpose('y', 'x', 'band')
@@ -268,54 +360,334 @@ def speedy_invert_xarray(spectra_targets, spectra_backgrounds, obs_solar_angles,
     return results
 
 
+def speedy_invert_dask(spectra_targets, spectra_backgrounds, obs_solar_angles,
+                       interpolator, spectrum_shade=None, max_eval=100,
+                       x0=np.array([0.5, 0.05, 10, 250]), algorithm=2,
+                       client=None, scatter_lut=True):
+    """
+    Parallel inversion of snow reflectance spectra using Dask and xarray.
+
+    This method enables distributed processing of large satellite imagery datasets
+    by leveraging Dask's parallel computation capabilities through xarray.apply_ufunc.
+    It's particularly useful for processing time series of satellite imagery where
+    the data is too large to fit in memory.
+
+    Parameters
+    ----------
+    spectra_targets : xarray.DataArray
+        Mixed spectra to invert. Must have a 'band' dimension and can have
+        any combination of spatial (x, y) and temporal (time) dimensions.
+        Shape: (time, y, x, band) or (y, x, band).
+    spectra_backgrounds : xarray.DataArray
+        Background (snow-free, R_0) spectra with same dimensions as targets
+        except potentially missing the time dimension if using static backgrounds.
+        Shape: (y, x, band).
+    obs_solar_angles : xarray.DataArray
+        Solar zenith angles (degrees) for each observation.
+        Shape: (time, y, x) or (y, x).
+    interpolator : spires.interpolator.LutInterpolator
+        Lookup table interpolator object containing reflectance data
+        and coordinate arrays (bands, solar_angles, dust_concentrations, grain_sizes).
+    spectrum_shade : numpy.ndarray, optional
+        1D array representing the ideal shaded spectrum.
+        Must have same length as number of bands. If None, uses zeros (default: None).
+    max_eval : int, optional
+        Maximum number of optimization iterations per pixel (default: 100).
+    x0 : array-like, optional
+        Initial guess: [fsca, fshade, dust_conc (ppm), grain_size (μm)].
+        Default: [0.5, 0.05, 10, 250].
+    algorithm : int, optional
+        NLopt algorithm code:
+        - 0: LN_NELDERMEAD
+        - 1: LN_SBPLX
+        - 2: LN_COBYLA (default, recommended)
+        - 3: LN_NEWUOA
+        - 4: LN_NEWUOA_BOUND
+        - 5: LN_BOBYQA
+        - 6: LN_PRAXIS
+        - 7: LD_MMA
+        - 8: LD_SLSQP (not working in C++)
+        - 9: LD_LBFGS
+    client : dask.distributed.Client, optional
+        Dask client for distributed computation. If None, uses default scheduler.
+    scatter_lut : bool, optional
+        Whether to scatter (broadcast) the LUT to all workers for faster access.
+        Recommended for large LUTs that will be reused many times (default: True).
+
+    Returns
+    -------
+    xarray.Dataset
+        Dataset containing inversion results with variables:
+        - fsca : Fractional snow-covered area (0-1)
+        - fshade : Fractional shaded area (0-1)
+        - dust_concentration : Dust concentration in snow (ppm)
+        - grain_size : Effective snow grain radius (μm)
+
+        Preserves all input coordinates and dimensions.
+
+    Examples
+    --------
+    >>> import spires
+    >>> import xarray as xr
+    >>> from dask.distributed import Client
+    >>>
+    >>> # Load data
+    >>> ds = xr.open_zarr('sentinel2_data.zarr')
+    >>> ds_r0 = xr.open_zarr('background_reflectance.zarr')
+    >>>
+    >>> # Setup Dask client for parallel processing
+    >>> client = Client(n_workers=4, threads_per_worker=2)
+    >>>
+    >>> # Load LUT
+    >>> lut = spires.LutInterpolator('sentinel2_lut.mat')
+    >>>
+    >>> # Run parallel inversion
+    >>> results = spires.speedy_invert_dask(
+    ...     spectra_targets=ds['reflectance'],
+    ...     spectra_backgrounds=ds_r0['reflectance'],
+    ...     obs_solar_angles=ds['sun_zenith'],
+    ...     interpolator=lut,
+    ...     client=client
+    ... )
+    >>>
+    >>> # Compute results (triggers actual computation)
+    >>> results = results.compute()
+
+    Notes
+    -----
+    - Input data should be chunked appropriately for your system's memory.
+      Typical chunk sizes: {'time': 1, 'y': 256, 'x': 256, 'band': -1}
+    - The 'band' dimension should not be chunked (use band=-1) as the
+      inversion operates on full spectra.
+    - For time series processing, chunking by time=1 enables parallel
+      processing across time steps.
+    - Performance scales with number of workers and chunk size.
+    - Consider using persist() on frequently accessed data.
+
+    See Also
+    --------
+    speedy_invert_xarray : Non-parallel xarray version
+    speedy_invert_array2d : Core 2D array inversion function
+    """
+    import xarray
+
+    # Handle optional imports
+    try:
+        import dask
+        import dask.array
+        from dask.distributed import Client
+    except ImportError:
+        raise ImportError(
+            "Dask is required for parallel processing. "
+            "Install with: conda install -c conda-forge dask distributed"
+        )
+
+    # Ensure we have a client
+    if client is None:
+        try:
+            # Try to get existing client
+            client = Client.current()
+        except ValueError:
+            # No client exists, will use default sched
+            # uler
+            pass
+
+    # Handle spectrum_shade
+    if spectrum_shade is None:
+        spectrum_shade = np.zeros(len(interpolator.bands))
+
+    # Scatter LUT to workers if requested and client exists
+    if scatter_lut and client is not None:
+        # Convert LUT reflectances to dask array and scatter
+        reflectances_da = dask.array.from_array(interpolator.reflectances)
+        scattered = client.scatter(dict(reflectances_da.dask), broadcast=True)
+        reflectances_scattered = dask.array.Array(
+            scattered,
+            name=reflectances_da.name,
+            chunks=reflectances_da.chunks,
+            dtype=reflectances_da.dtype,
+            meta=reflectances_da._meta,
+            shape=reflectances_da.shape
+        )
+    else:
+        reflectances_scattered = interpolator.reflectances
+
+    # Define the wrapper function for apply_ufunc
+    def _invert_wrapper(spectra_targets, spectra_backgrounds, obs_solar_angles,
+                       bands, solar_angles, dust, grain, reflectances):
+        """Internal wrapper for speedy_invert_array2d."""
+        # Handle potential time dimension
+        if spectra_targets.ndim == 4:  # Has time dimension
+            # Process each time step
+            n_time = spectra_targets.shape[0]
+            results = np.empty((n_time,) + spectra_targets.shape[1:3] + (4,))
+            for t in range(n_time):
+                results[t] = speedy_invert_array2d(
+                    spectra_targets=spectra_targets[t],
+                    spectra_backgrounds=spectra_backgrounds,
+                    obs_solar_angles=obs_solar_angles[t],
+                    spectrum_shade=spectrum_shade,
+                    bands=bands,
+                    solar_angles=solar_angles,
+                    dust_concentrations=dust,
+                    grain_sizes=grain,
+                    reflectances=reflectances,
+                    max_eval=max_eval,
+                    x0=x0,
+                    algorithm=algorithm
+                )
+        else:  # No time dimension
+            results = speedy_invert_array2d(
+                spectra_targets=spectra_targets,
+                spectra_backgrounds=spectra_backgrounds,
+                obs_solar_angles=obs_solar_angles,
+                spectrum_shade=spectrum_shade,
+                bands=bands,
+                solar_angles=solar_angles,
+                dust_concentrations=dust,
+                grain_sizes=grain,
+                reflectances=reflectances,
+                max_eval=max_eval,
+                x0=x0,
+                algorithm=algorithm
+            )
+        return results
+
+    # Determine input core dimensions based on data structure
+    has_time = 'time' in spectra_targets.dims
+
+    if has_time:
+        # Time-varying data
+        target_core_dims = ['band']
+        background_core_dims = ['band']
+        angle_core_dims = []
+        output_core_dims = [['property']]
+    else:
+        # Static data
+        target_core_dims = ['band']
+        background_core_dims = ['band']
+        angle_core_dims = []
+        output_core_dims = [['property']]
+
+    # Apply parallel inversion using xarray.apply_ufunc
+    results = xarray.apply_ufunc(
+        _invert_wrapper,
+        spectra_targets,
+        spectra_backgrounds,
+        obs_solar_angles,
+        interpolator.bands,
+        interpolator.solar_angles,
+        interpolator.dust_concentrations,
+        interpolator.grain_sizes,
+        reflectances_scattered,
+        dask='parallelized',
+        input_core_dims=[
+            target_core_dims,      # spectra_targets
+            background_core_dims,  # spectra_backgrounds
+            angle_core_dims,       # obs_solar_angles
+            ['bands'],             # bands
+            ['sz'],                # solar_angles
+            ['dust'],              # dust_concentrations
+            ['grain'],             # grain_sizes
+            ['bands', 'sz', 'dust', 'grain']  # reflectances
+        ],
+        output_core_dims=output_core_dims,
+        output_dtypes=[np.float32],
+        dask_gufunc_kwargs={
+            'allow_rechunk': False,
+            'output_sizes': {'property': 4}
+        },
+        vectorize=False
+    )
+
+    # Convert to Dataset with named variables
+    results = results.to_dataset(dim='property')
+    results = results.rename({
+        0: 'fsca',
+        1: 'fshade',
+        2: 'dust_concentration',
+        3: 'grain_size'
+    })
+
+    # Add metadata
+    results['fsca'].attrs = {
+        'long_name': 'Fractional Snow-Covered Area',
+        'units': '1',
+        'valid_range': [0, 1]
+    }
+    results['fshade'].attrs = {
+        'long_name': 'Fractional Shaded Area',
+        'units': '1',
+        'valid_range': [0, 1]
+    }
+    results['dust_concentration'].attrs = {
+        'long_name': 'Dust Concentration in Snow',
+        'units': 'ppm',
+        'valid_range': [0, 10000]
+    }
+    results['grain_size'].attrs = {
+        'long_name': 'Effective Snow Grain Radius',
+        'units': 'μm',
+        'valid_range': [10, 2000]
+    }
+
+    return results
+
+
 def snow_diff_4(x, spectrum_target, spectrum_background, solar_angle, interpolator, shade):
     r"""
-    Calculates the difference between a spectrum modelled subject to `x` (`x=[f_sca, f_shade, dust_concentration, grain_size]`)
-    and the target spectrum.
+    Calculate spectral difference for 4-parameter snow model.
+
+    Computes the Euclidean distance between observed and modeled spectra using
+    a 4-parameter linear mixing model with snow, shade, and background components.
 
     .. math::
-        
+
        \begin{align}
         R_{model}   & = R_{pure snow}( \phi_{sun}, c_{dust}, s_{grain}) * f_{sca}  \\
                     & + R_{shade} * f_{shade} \\
                     & + R_{0} * (1 - f_{sca} - f_{shade})
         \end{align}
 
-    Note:
-    If f_sca is within 2 pct, use 3 variable solution. Error will be higher, but 4 parameter solution likely overfits.
-
     Parameters
     ----------
-    x: array_like
-        x[0]: f_sca
-        x[1]: f_shade
-        x[2]: dust_concentration
-        x[3]: grain_size
-    spectrum_target: numpy.ndarray
-        The mixed observed spectrum to invert
-    spectrum_background: numpy.ndarray
-        The (snow free) background spectrum R_0
-    solar_angle: float
-        The solar angle of the spectrum target
-    interpolator: spires.interpolator.LutInterpolator
-        a callable object that returns a modelled spectrum subject to solar_angle, dust_concentration, and grain_size
-    shade: numpy.ndarray
-        Ideal shade endmember
+    x : array-like
+        Model parameters:
+        - x[0] : f_sca - Fractional snow-covered area (0-1)
+        - x[1] : f_shade - Fractional shaded area (0-1)
+        - x[2] : dust_concentration - Dust concentration in snow (ppm)
+        - x[3] : grain_size - Effective snow grain radius (μm)
+    spectrum_target : numpy.ndarray
+        The observed mixed spectrum to match.
+    spectrum_background : numpy.ndarray
+        The background (snow-free, R_0) spectrum.
+    solar_angle : float
+        Solar zenith angle of the observation (degrees).
+    interpolator : spires.interpolator.LutInterpolator
+        Callable object that returns modeled snow spectrum given
+        solar_angle, dust_concentration, and grain_size.
+    shade : numpy.ndarray
+        Ideal shade endmember spectrum.
 
     Returns
     -------
-    distance: double
-        The distance between the modelled spectrum and the target spectrum
+    float
+        Euclidean distance between modeled and target spectra.
+
+    Notes
+    -----
+    If f_sca is within 2%, consider using 3-parameter solution (snow_diff_3)
+    to avoid overfitting.
 
     Examples
-    -----------
+    --------
     >>> import spires
     >>> import numpy as np
     >>> interpolator = spires.interpolator.LutInterpolator(lut_file='tests/data/lut_sentinel2b_b2to12_3um_dust.mat')
     >>> f_sca = 0.482
     >>> f_shade = 0.065
-    >>> dust_concentration = 1000 # ppm
-    >>> grain_size = 220
+    >>> dust_concentration = 1000  # ppm
+    >>> grain_size = 220  # μm
     >>> solar_angle = 55.73733298
     >>> x = [f_sca, f_shade, dust_concentration, grain_size]
     >>> spectrum_target = np.array([0.3424,0.366,0.3624,0.38932347,0.41624767,0.39567757,0.07043362,0.06267947, 0.3792])
@@ -337,47 +709,53 @@ def snow_diff_4(x, spectrum_target, spectrum_background, solar_angle, interpolat
 
 def snow_diff_3(x, spectrum_target, solar_angle, interpolator, shade):
     r"""
-    Calculates the difference between a spectrum modelled subject to x (x=[f_sca, f_shade, dust_concentration, grain_size)
-    and the target spectrum.
+    Calculate spectral difference for 3-parameter snow model.
+
+    Computes the Euclidean distance between observed and modeled spectra using
+    a simplified 3-parameter model where shade fills the non-snow fraction.
 
     .. math::
+
         \begin{align}
         R_{model} & = R_{pure snow}( \phi_{sun}, c_{dust}, s_{grain}) * f_{sca} \\
                   & + R_{shade} * (1-f_{sca})
         \end{align}
 
-    Note:
-    If f_sca is within 2 pct, use 3 variable solution. Error will be higher, but 4 parameter solution likely overfits.
-
     Parameters
     ----------
-    x: array_like
-        - x[0]: f_sca
-        - x[1]: f_shade
-        - x[2]: dust_concentration
-        - x[3]: grain_size
-    spectrum_target: numpy.ndarray
-        The mixed observed spectrum to invert
-    solar_angle: float
-        The solar angle of the spectrum target
-    interpolator: spires.interpolator.LutInterpolator
-        a callable object that returns a modelled spectrum subject to solar_angle, dust_concentration, and grain_size
-    shade: numpy.ndarray
-        Ideal shade endmember
+    x : array-like
+        Model parameters (note: only first 3 are used):
+        - x[0] : f_sca - Fractional snow-covered area (0-1)
+        - x[1] : dust_concentration - Dust concentration in snow (ppm)
+        - x[2] : grain_size - Effective snow grain radius (μm)
+    spectrum_target : numpy.ndarray
+        The observed mixed spectrum to match.
+    solar_angle : float
+        Solar zenith angle of the observation (degrees).
+    interpolator : spires.interpolator.LutInterpolator
+        Callable object that returns modeled snow spectrum given
+        solar_angle, dust_concentration, and grain_size.
+    shade : numpy.ndarray
+        Ideal shade endmember spectrum.
 
     Returns
     -------
-    distance: double
-        The distance between the modelled spectrum and the target spectrum
+    float
+        Euclidean distance between modeled and target spectra.
+
+    Notes
+    -----
+    This 3-parameter model assumes the non-snow fraction is entirely shade
+    (no background component). Use when f_sca is near 100% to avoid overfitting.
 
     Examples
-    ---------
+    --------
     >>> import spires
     >>> import numpy as np
     >>> interpolator = spires.interpolator.LutInterpolator(lut_file='tests/data/lut_sentinel2b_b2to12_3um_dust.mat')
     >>> f_sca = 0.482
-    >>> dust_concentration = 1000 # ppm
-    >>> grain_size = 220
+    >>> dust_concentration = 1000  # ppm
+    >>> grain_size = 220  # μm
     >>> solar_angle = 55.73733298
     >>> x = [f_sca, dust_concentration, grain_size]
     >>> spectrum_target = np.array([0.3424,0.366,0.3624,0.38932347,0.41624767,0.39567757,0.07043362,0.06267947, 0.3792])
@@ -400,44 +778,54 @@ def speedy_invert_scipy(interpolator: spires.interpolator.LutInterpolator, spect
                         solar_angle, shade=None,
                         scipy_options=None, mode=3, method='SLSQP'):
     """
-    Invert snow spectra using scipy.optimize.minimize (rather than NLOPT).
+    Invert snow spectra using scipy.optimize.minimize.
 
-    This method should functionally be equivalent to spires.legacy.speedy_invert() and only differs in style.
+    Alternative implementation using SciPy's optimization routines instead of NLopt.
+    Provides compatibility with legacy code and additional solver options.
 
     Parameters
-    ------------
-    interpolator: spires.interpolator.LutInterpolator
-        an object that
-        a) has attributes `bands`, `solar_angle`, `dust_concentration`, `grain_size` that hold the coordinates
-        b) has a method interpolate_all(solar_angle, dust_concentration, and grain_size) that returns a spectrum
-    spectrum_target: numpy.ndarray
-        target spectrum to be inverted. Must be same shape as spectrum_background
-    spectrum_background: numpy.ndarray
-        snow-free background spectrum. Must be same shape as spectrum_target
-    solar_angle: double
-        solar zenith angle of spectrum_target in same unites as interpolator coordinates
-    shade: numpy.ndarray (optional)
-        ideal shade endmember. Must be same shape as spectrum_target. If none, reflectance of 0 on all bands is used.
-    mode: int
-        3 or 4 variable inversion.
-        Note: If f_sca is within 2 pct, use 3 variable solution. Error will be higher, but 4 parameter solution likely overfits.
-    scipy_options: dict
-        the scipy solver options.
-        Default:  `scipy_options = {'disp': False, 'iprint': 100, 'maxiter': 1000, 'ftol': 1e-9}`
-    method: str
-        solver method.
+    ----------
+    interpolator : spires.interpolator.LutInterpolator
+        Interpolator object with:
+        - Attributes: `bands`, `solar_angles`, `dust_concentrations`, `grain_sizes`
+        - Method: `interpolate_all(solar_angle, dust_concentration, grain_size)`
+    spectrum_target : numpy.ndarray
+        Target spectrum to be inverted. Must be same shape as `spectrum_background`.
+    spectrum_background : numpy.ndarray
+        Background (snow-free, R_0) spectrum. Must be same shape as `spectrum_target`.
+    solar_angle : float
+        Solar zenith angle of observation (degrees).
+        Must use same units as interpolator coordinates.
+    shade : numpy.ndarray, optional
+        Ideal shade endmember spectrum. Must be same shape as `spectrum_target`.
+        If None, uses zeros (default: None).
+    scipy_options : dict, optional
+        SciPy solver options. Default:
+        `{'disp': False, 'iprint': 100, 'maxiter': 1000, 'ftol': 1e-9}`
+    mode : int, optional
+        Number of parameters in model (default: 3).
+        3 = Simplified model (f_sca, dust, grain_size).
+        4 = Full model (f_sca, f_shade, dust, grain_size).
+        Use mode=3 when f_sca is near 100% to avoid overfitting.
+    method : str, optional
+        SciPy optimization method (default: 'SLSQP').
+        Common options: 'SLSQP', 'L-BFGS-B', 'TNC'.
 
     Returns
-    ---------
-    res: scipy.optimize.OptimizeResult
-        see [scipy.optimize.OptimizeResult](https://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.OptimizeResult.html#scipy.optimize.OptimizeResult)
-        res.x contains the solution of the optimization problem, with
-        - x[0]: f_sca
-        - x[1]: f_shade
-        - x[2]: dust_concentration
-        - x[3]: grain_size
-    model_ref: numpy.ndarray
-        the optimized modelled reflectance
+    -------
+    tuple
+        (res, model_refl) where:
+
+        - res : scipy.optimize.OptimizeResult
+          Optimization result object. res.x contains:
+          [f_sca, f_shade, dust_concentration, grain_size]
+        - model_refl : numpy.ndarray
+          The optimized modeled reflectance spectrum.
+
+    See Also
+    --------
+    scipy.optimize.OptimizeResult : Documentation of result object
+    speedy_invert : NLopt-based implementation (faster)
 
     Examples
     --------
@@ -510,17 +898,27 @@ def speedy_invert_scipy(interpolator: spires.interpolator.LutInterpolator, spect
 
 def index_to_value(index, coords):
     """
-    Converts an index value to a coordinate value
+    Convert normalized index to coordinate value.
+
+    Linearly interpolates between coordinate values based on a normalized
+    index in the range [0, 1].
 
     Parameters
     ----------
-    index:
-    coords: numpy.array
+    index : float
+        Normalized index value between 0 and 1.
+    coords : numpy.ndarray
+        Array of coordinate values to interpolate between.
 
     Returns
     -------
-    value
+    float
+        Interpolated coordinate value.
 
+    Notes
+    -----
+    Used internally by speedy_invert_scipy_normalized to convert
+    normalized optimization parameters back to physical units.
     """
     idx = index * coords.size
     l_idx = int(idx)
@@ -534,28 +932,47 @@ def speedy_invert_scipy_normalized(interpolator: spires.interpolator.LutInterpol
                                    spectrum_target, spectrum_background, solar_angle, spectrum_shade=None,
                                    method='COBYLA'):
     """
-    Perform speedy invert with COBYLA solver. The scipy COBYLA solver does not allow us to specify
-    initial steps (rhobeg) for each parameter separately. We therefore need to scale the problem,
-    i.e. for the solver, all parameters are on a scale of 0-1.
+    Invert snow spectra with normalized parameter space.
+
+    Performs optimization with all parameters scaled to [0, 1] range to improve
+    convergence for solvers like COBYLA that don't support parameter-specific
+    step sizes.
 
     Parameters
     ----------
-    method: str
-        the scipy solver method
-    spectrum_shade: np.ndarray
-        the shade spectrum
-    interpolator: spires.interpolator.LutInterpolator
-        A lut interpolator
-    spectrum_target: np.ndarray
-        the spectrum target
-    spectrum_background: np.ndarray
-        the background spectrum
-    solar_angle: float
-        the solar angle of the spectrum target
+    interpolator : spires.interpolator.LutInterpolator
+        Interpolator object with lookup table and coordinate arrays.
+    spectrum_target : numpy.ndarray
+        Target spectrum to be inverted.
+    spectrum_background : numpy.ndarray
+        Background (snow-free, R_0) spectrum. Must be same shape as `spectrum_target`.
+    solar_angle : float
+        Solar zenith angle of observation (degrees).
+    spectrum_shade : numpy.ndarray, optional
+        Ideal shade endmember spectrum. Must be same shape as `spectrum_target`.
+        If None, uses zeros (default: None).
+    method : str, optional
+        SciPy optimization method (default: 'COBYLA').
+        COBYLA is recommended as it handles the normalized space well.
 
     Returns
     -------
+    tuple
+        (res, model_refl) where:
 
+        - res : scipy.optimize.OptimizeResult
+          Optimization result with res.x containing:
+          [f_sca, f_shade, dust_concentration, grain_size]
+          (dust and grain_size are converted back to physical units)
+        - model_refl : numpy.ndarray
+          The optimized modeled reflectance spectrum.
+
+    Notes
+    -----
+    This function internally normalizes dust_concentration and grain_size
+    to [0, 1] for optimization, then converts back to physical units.
+    This improves convergence for algorithms that assume similar scales
+    across parameters.
     """
     if spectrum_shade is None:
         spectrum_shade = np.zeros_like(spectrum_target)

@@ -182,6 +182,43 @@ See LICENSE file for details.
 
 ## Citation
 
-If you use this software, please cite:
+If you use this software, please cite both the algorithm paper and the software implementation:
 
-Bair, E. H., Stillinger, T., & Dozier, J. (2021). Snow Property Inversion From Remote Sensing (SPIReS): A Generalized Multispectral Unmixing Approach With Examples From MODIS and Landsat 8 OLI. *IEEE Transactions on Geoscience and Remote Sensing*, 59(9), 7270-7284. https://doi.org/10.1109/TGRS.2020.3040328
+**Algorithm:**
+```bibtex
+@article{bair2021spires,
+  title={Snow Property Inversion From Remote Sensing (SPIReS): A Generalized Multispectral Unmixing Approach With Examples From MODIS and Landsat 8 OLI},
+  author={Bair, E. H. and Stillinger, T. and Dozier, J.},
+  journal={IEEE Transactions on Geoscience and Remote Sensing},
+  volume={59},
+  number={9},
+  pages={7270--7284},
+  year={2021},
+  doi={10.1109/TGRS.2020.3040328}
+}
+```
+
+**Software:**
+```bibtex
+@software{bair2024spipy,
+  title={SpiPy: Python implementation of SPIRES snow property inversion},
+  author={Bair, Ned and Griessbaum, Niklas},
+  year={2024},
+  url={https://github.com/edwardbair/SpiPy},
+  version={0.2.0},
+  note={See CITATION.cff for full metadata}
+}
+```
+
+Alternatively, see [CITATION.cff](CITATION.cff) or use GitHub's "Cite this repository" feature.
+
+## Funding
+
+Development of this software was supported by:
+
+**Contract:** W913E523C0002
+**Program:** "Climate and natural hazards, snow-covered and mountain environment sensing research"
+**Sponsor:** Broad Agency Announcement Program, Cold Regions Research and Engineering Laboratory
+**Monitored by:** U.S. Army Engineer Research and Development Center, Hanover, NH 03755
+
+**Distribution Statement:** Approved for public release; distribution is unlimited.

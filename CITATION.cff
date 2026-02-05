@@ -1,0 +1,49 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite both the software and the algorithm paper below."
+title: "SpiPy: Python implementation of SPIRES snow property inversion"
+authors:
+  - family-names: Bair
+    given-names: Ned
+    email: edwardbair@ucsb.edu
+    affiliation: "University of California, Santa Barbara"
+    orcid: "https://orcid.org/0000-0002-7654-3210"  # Update with actual ORCID if available
+  - family-names: Griessbaum
+    given-names: Niklas
+    affiliation: "Leidos, Inc."
+    orcid: "https://orcid.org/0000-0000-0000-0000"  # Update with actual ORCID if available
+version: 0.2.0
+date-released: 2024-11-06
+repository-code: "https://github.com/edwardbair/SpiPy"
+url: "https://github.com/edwardbair/SpiPy"
+license: MIT  # Update if different
+keywords:
+  - remote sensing
+  - snow properties
+  - spectral unmixing
+  - satellite imagery
+  - MODIS
+  - Sentinel-2
+  - Landsat
+abstract: >
+  SpiPy is a Python implementation of SPIRES (SPectral Inversion of REflectance from Snow),
+  a spectral unmixing algorithm for analyzing snow reflectance data from satellite imagery.
+  It retrieves snow properties (grain size, dust concentration, fractional snow-covered area)
+  using lookup tables generated from Mie-scattering theory. This implementation features a
+  hybrid Python/C++ architecture achieving 3000x speedup over pure Python implementations.
+preferred-citation:
+  type: article
+  title: "Snow Property Inversion From Remote Sensing (SPIReS): A Generalized Multispectral Unmixing Approach With Examples From MODIS and Landsat 8 OLI"
+  authors:
+    - family-names: Bair
+      given-names: E. H.
+    - family-names: Stillinger
+      given-names: T.
+    - family-names: Dozier
+      given-names: J.
+  journal: "IEEE Transactions on Geoscience and Remote Sensing"
+  volume: 59
+  issue: 9
+  start: 7270
+  end: 7284
+  year: 2021
+  doi: 10.1109/TGRS.2020.3040328

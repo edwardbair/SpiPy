@@ -1,0 +1,48 @@
+name: spipy14
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  # Build dependencies (CRITICAL: use conda-forge for nlopt C++ headers!)
+  - gcc
+  - gxx
+  - swig
+  - nlopt
+
+  # Core dependencies
+  - numpy
+  - h5py
+  - scipy
+  - xarray
+  - netcdf4
+
+  # Geospatial
+  - geopandas
+  - gdal
+  - pyproj
+  - rioxarray
+
+  # Performance & processing
+  - dask
+  - zarr
+
+  # Visualization
+  - matplotlib
+  - ipympl
+  - ffmpeg
+
+  # Development
+  - ipykernel
+  - tox
+
+  # Documentation
+  - sphinx
+  - sphinx-automodapi
+  - myst-parser
+  - nbsphinx
+  - sphinx-markdown-tables
+  - pydata-sphinx-theme
+
+  # Tools
+  - gh
+  - git-filter-repo

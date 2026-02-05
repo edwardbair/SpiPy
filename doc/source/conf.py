@@ -10,6 +10,16 @@ project = 'SpiPy'
 copyright = '2024, Niklas Griessbaum'
 author = 'Niklas Griessbaum'
 
+# Get version from setuptools-scm
+try:
+    from importlib.metadata import version
+    release = version('spires')
+except Exception:
+    release = 'unknown'
+
+version = release  # Short version (e.g., '0.2.1')
+# Full version including alpha/beta/rc tags
+
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 

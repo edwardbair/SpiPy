@@ -1,0 +1,19 @@
+# Documentation build requirements for Read the Docs
+# Note: The package itself is installed via pip install .[docs] in .readthedocs.yaml
+
+# Sphinx and extensions (should be covered by pyproject.toml [docs])
+# But we list them here for explicit RTD builds
+sphinx>=4.0
+sphinx-automodapi
+sphinx-rtd-theme
+pydata-sphinx-theme
+myst-parser
+nbsphinx
+sphinx-markdown-tables
+
+# Required for building the package
+numpy
+setuptools-scm
+
+# For SWIG bindings (system packages installed via apt in .readthedocs.yaml)
+# swig, gcc, g++, nlopt

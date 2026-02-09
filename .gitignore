@@ -12,3 +12,15 @@ __pycache__/
 *.DS_Store
 *.aux.xml
 .idea/
+
+# Secrets and credentials (prevent accidental commits)
+*.env
+.env.*
+!.envrc
+*.pem
+*.key
+**/credentials*
+**/secrets*
+
+# Internal/OPSEC documents (not for public release)
+/OPSEC/

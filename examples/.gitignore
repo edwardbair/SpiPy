@@ -1,0 +1,24 @@
+# Jupyter Notebook
+.ipynb_checkpoints
+*/.ipynb_checkpoints/*
+
+# Large output files
+*.mp4
+*.gif
+*.avi
+*.mov
+
+# Data files
+*.zarr/
+*.nc
+*.h5
+*.mat
+
+# Temporary files
+*.tmp
+*.bak
+*~
+
+# System files
+.DS_Store
+Thumbs.db

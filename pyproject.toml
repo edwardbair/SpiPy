@@ -5,24 +5,45 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "spires"
-description = "spires python implementation"
-authors = [{ name = "Ned Bair", email = "edwardbair@ucsb.edu" }]
+description = "Python implementation of SPIRES (SPectral Inversion of REflectance from Snow) for retrieving snow properties from satellite imagery"
+authors = [
+    { name = "Ned Bair", email = "edwardbair@ucsb.edu" },
+    { name = "Niklas Griessbaum" }
+]
 readme = { file = "README.md", content-type = "text/markdown" }
-requires-python = ">=3.9" 
+requires-python = ">=3.9"
+license = { text = "MIT" }
+keywords = ["remote sensing", "snow", "satellite", "spectral unmixing", "MODIS", "Sentinel-2", "Landsat"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: C++",
+    "Topic :: Scientific/Engineering",
+    "Topic :: Scientific/Engineering :: Atmospheric Science",
+    "Topic :: Scientific/Engineering :: GIS",
+]
 dependencies = [
     "numpy",
     "h5py",
     "scipy",
     "xarray",
     "netCDF4",
-    "scipy" # Only for legacy
 ]
 dynamic = ["version"]  # This tells the backend to get version from setuptools_scm
 
 
 [project.urls]
 Homepage = "https://github.com/edwardbair/SpiPy"
-"Bug Tracker" = "https://github.com/edwardbair/SpiPy"
+Documentation = "https://spipy.readthedocs.io"
+Repository = "https://github.com/edwardbair/SpiPy"
+"Bug Tracker" = "https://github.com/edwardbair/SpiPy/issues"
+Changelog = "https://github.com/edwardbair/SpiPy/releases"
 
 
 [project.optional-dependencies]

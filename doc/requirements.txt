@@ -1,8 +1,8 @@
 # Documentation build requirements for Read the Docs
-# Note: The package itself is installed via pip install .[docs] in .readthedocs.yaml
+# Note: We skip installing the package to avoid building C++ extensions
+# The C++ module (spires._core) is mocked in conf.py via autodoc_mock_imports
 
-# Sphinx and extensions (should be covered by pyproject.toml [docs])
-# But we list them here for explicit RTD builds
+# Sphinx and extensions
 sphinx>=4.0
 sphinx-automodapi
 sphinx-rtd-theme
@@ -11,9 +11,12 @@ myst-parser
 nbsphinx
 sphinx-markdown-tables
 
-# Required for building the package
+# Runtime dependencies (needed for importing Python modules)
 numpy
-setuptools-scm
+h5py
+scipy
+xarray
+netCDF4
 
-# For SWIG bindings (system packages installed via apt in .readthedocs.yaml)
-# swig, gcc, g++, nlopt
+# Version detection
+setuptools-scm

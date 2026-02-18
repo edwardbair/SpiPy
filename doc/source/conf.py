@@ -11,11 +11,17 @@ copyright = '2024, Niklas Griessbaum'
 author = 'Niklas Griessbaum'
 
 # Get version from setuptools-scm
+# Since the package isn't installed on ReadTheDocs, we use setuptools_scm directly
 try:
     from importlib.metadata import version
     release = version('spires')
 except Exception:
-    release = 'unknown'
+    # Fallback: use setuptools_scm to get version from git
+    try:
+        from setuptools_scm import get_version
+        release = get_version(root='../..', relative_to=__file__)
+    except Exception:
+        release = 'unknown'
 
 version = release  # Short version (e.g., '0.2.1')
 # Full version including alpha/beta/rc tags
@@ -26,6 +32,10 @@ version = release  # Short version (e.g., '0.2.1')
 import os
 import sys
 sys.path.insert(0, os.path.abspath('../../'))
+
+# Mock C++ extensions for ReadTheDocs
+# This allows docs to build without compiling SWIG extensions
+autodoc_mock_imports = ['spires._core']
 
 
 extensions = ['sphinx.ext.autodoc',

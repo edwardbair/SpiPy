@@ -34,8 +34,19 @@ import sys
 sys.path.insert(0, os.path.abspath('../../'))
 
 # Mock C++ extensions for ReadTheDocs
-# This allows docs to build without compiling SWIG extensions
-autodoc_mock_imports = ['spires._core']
+# Create a mock _core module before any imports happen
+from unittest.mock import MagicMock
+
+class Mock(MagicMock):
+    @classmethod
+    def __getattr__(cls, name):
+        return MagicMock()
+
+sys.modules['spires._core'] = Mock()
+sys.modules['_core'] = Mock()
+
+# Also add to autodoc_mock_imports for extra safety
+autodoc_mock_imports = ['spires._core', '_core']
 
 
 extensions = ['sphinx.ext.autodoc',

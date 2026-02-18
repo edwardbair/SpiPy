@@ -20,20 +20,14 @@ build:
     python: "3.11"
   apt_packages:
     - pandoc
-    - swig
-    - g++
-    - gcc
-    - libnlopt-dev
   jobs:
-    pre_build:
-      # Build SWIG extensions before Sphinx runs
-      - python setup.py build_ext --inplace
+    post_checkout:
+      # Fetch full git history for setuptools_scm version detection
+      - git fetch --unshallow || true
 
 # Python dependencies
+# Note: We skip installing the package itself to avoid building C++ extensions
+# Sphinx will use autodoc_mock_imports for the C++ modules
 python:
   install:
-    - method: pip
-      path: .
-      extra_requirements:
-        - docs
     - requirements: doc/requirements.txt

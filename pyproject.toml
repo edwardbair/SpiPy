@@ -39,11 +39,11 @@ dynamic = ["version"]  # This tells the backend to get version from setuptools_s
 
 
 [project.urls]
-Homepage = "https://github.com/edwardbair/SpiPy"
+Homepage = "https://github.com/NiklasPhabian/SpiPy"
 Documentation = "https://spipy.readthedocs.io"
-Repository = "https://github.com/edwardbair/SpiPy"
-"Bug Tracker" = "https://github.com/edwardbair/SpiPy/issues"
-Changelog = "https://github.com/edwardbair/SpiPy/releases"
+Repository = "https://github.com/NiklasPhabian/SpiPy"
+"Bug Tracker" = "https://github.com/NiklasPhabian/SpiPy/issues"
+Changelog = "https://github.com/NiklasPhabian/SpiPy/releases"
 
 
 [project.optional-dependencies]

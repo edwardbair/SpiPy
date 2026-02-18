@@ -11,11 +11,17 @@ copyright = '2024, Niklas Griessbaum'
 author = 'Niklas Griessbaum'
 
 # Get version from setuptools-scm
+# Since the package isn't installed on ReadTheDocs, we use setuptools_scm directly
 try:
     from importlib.metadata import version
     release = version('spires')
 except Exception:
-    release = 'unknown'
+    # Fallback: use setuptools_scm to get version from git
+    try:
+        from setuptools_scm import get_version
+        release = get_version(root='../..', relative_to=__file__)
+    except Exception:
+        release = 'unknown'
 
 version = release  # Short version (e.g., '0.2.1')
 # Full version including alpha/beta/rc tags
@@ -26,6 +32,24 @@ version = release  # Short version (e.g., '0.2.1')
 import os
 import sys
 sys.path.insert(0, os.path.abspath('../../'))
+
+# Mock C++ extensions for ReadTheDocs
+# The SWIG-generated files (core.py, _core.so) don't exist until build time
+# Create mock modules before any imports happen
+from unittest.mock import MagicMock
+
+class Mock(MagicMock):
+    @classmethod
+    def __getattr__(cls, name):
+        return MagicMock()
+
+# Mock both the C++ extension and the SWIG-generated Python wrapper
+sys.modules['spires._core'] = Mock()
+sys.modules['_core'] = Mock()
+sys.modules['spires.core'] = Mock()
+
+# Also add to autodoc_mock_imports for extra safety
+autodoc_mock_imports = ['spires._core', '_core', 'spires.core']
 
 
 extensions = ['sphinx.ext.autodoc',
